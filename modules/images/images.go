@@ -1,0 +1,5 @@
+package images
+
+const (
+	copyrightSymbol = "©"
+)
