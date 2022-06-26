@@ -185,8 +185,11 @@ func (c *Citgen) splitLines(s string, width, minHeight int) ([]string, int) {
 	for _, line := range strings.Split(s, "\n") {
 		var newLine string
 		for _, word := range strings.Split(line, " ") {
-			if fonts.StringWidth(c.FontFace, newLine+" "+word) <= width {
-				newLine += " " + word
+			if newLine != "" {
+				word = " " + word
+			}
+			if fonts.StringWidth(c.FontFace, newLine+word) <= width {
+				newLine += word
 				continue
 			}
 			lines = append(lines, newLine)
