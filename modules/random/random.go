@@ -4,8 +4,8 @@ import (
 	"math"
 	"math/rand"
 	"strconv"
+	"strings"
 	"tghwbot/bot"
-	"tghwbot/common/strbytes"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -35,7 +35,7 @@ var Number = bot.Command{
 				ctx.ReplyText("Укажите число от 1 до MaxInt64")
 			}
 		}
-		ctx.SendText("Выпало число " + strconv.FormatInt(myRand.Int63n(max), 10))
+		ctx.ReplyText("Выпало число " + strconv.FormatInt(myRand.Int63n(max), 10))
 	},
 }
 
@@ -47,7 +47,7 @@ var Flip = bot.Command{
 		if myRand.Intn(2) == 1 {
 			r = "Выпал орёл"
 		}
-		ctx.SendText(r)
+		ctx.ReplyText(r)
 	},
 }
 
@@ -59,8 +59,8 @@ var Info = bot.Command{
 			ctx.ReplyText("Укажите событие")
 		}
 		p := myRand.Intn(101)
-		e := strbytes.Join(args, ' ')
-		ctx.SendText("Вероятность того, что " + e + " — " + strconv.Itoa(p) + "%")
+		e := strings.Join(args, " ")
+		ctx.ReplyText("Вероятность того, что " + e + " — " + strconv.Itoa(p) + "%")
 	},
 }
 
@@ -72,7 +72,7 @@ var When = bot.Command{
 			ctx.ReplyText("Укажите событие")
 		}
 		t := time.Now().AddDate(randP(51, 1.5), randInt(12), randInt(31))
-		e := strbytes.Join(args, ' ')
-		ctx.SendText(e + " " + t.Format("02 Jan 2006"))
+		e := strings.Join(args, " ")
+		ctx.ReplyText(e + " " + t.Format("02 Jan 2006"))
 	},
 }

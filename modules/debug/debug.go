@@ -34,7 +34,7 @@ var DebugCmd = bot.Command{
 				out = memStats(true)
 			}
 		}
-		ctx.SendText(out)
+		ctx.ReplyText(out)
 	},
 }
 

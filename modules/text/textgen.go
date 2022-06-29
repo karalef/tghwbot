@@ -27,6 +27,6 @@ var Gen = bot.Command{
 		for _, r := range replies {
 			text += query + r + "\n\n"
 		}
-		ctx.SendText(text)
+		ctx.ReplyText(text)
 	},
 }
