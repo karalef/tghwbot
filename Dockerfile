@@ -22,6 +22,6 @@ FROM alpine:latest
 
 WORKDIR /app
 
-COPY --from=build /src/bin ./
+COPY --from=build /src/bin .
 
-ENTRYPOINT [ "./hwbot" ]
+ENTRYPOINT [ "./bin/hwbot" ]
