@@ -1,1 +1,1 @@
-worker: /app/bin/HwBot
+worker: /app/bin/tghwbot
