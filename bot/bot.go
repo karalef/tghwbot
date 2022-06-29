@@ -89,7 +89,7 @@ func (b *Bot) onMessage(upd *tgbotapi.Message) {
 		return
 	}
 
-	ctx := b.makeContext(cmd, upd.Chat)
+	ctx := b.makeContext(cmd, upd)
 	go cmd.Run(ctx, upd, args)
 }
 

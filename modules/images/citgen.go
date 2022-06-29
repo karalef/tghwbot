@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
+	"io"
 	"log"
 	"strings"
 	"tghwbot/bot"
@@ -24,15 +25,13 @@ var CitgenCmd = bot.Command{
 	Description: "Генерация цитаты",
 	Run: func(ctx *bot.Context, msg *tgbotapi.Message, args []string) {
 		if msg.ReplyToMessage == nil {
-			ctx.SendText("Ответьте на сообщение")
-			return
+			ctx.ReplyText("Ответьте на сообщение")
 		}
 		from := msg.ReplyToMessage.From
 		text := msg.ReplyToMessage.Text
 		date := msg.ReplyToMessage.Time()
 		if text == "" {
-			ctx.SendText("Сообщение не содержит текста")
-			return
+			ctx.ReplyText("Сообщение не содержит текста")
 		}
 
 		caption := ""
@@ -56,8 +55,7 @@ var CitgenCmd = bot.Command{
 		data, err := config.GeneratePNGBytes(photo, user, text, date, from.ID == msg.From.ID)
 		if err != nil {
 			log.Println("citgen generate:", err.Error())
-			ctx.SendText(err.Error())
-			return
+			ctx.ReplyText(err.Error())
 		}
 
 		result := tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileBytes{
@@ -65,32 +63,28 @@ var CitgenCmd = bot.Command{
 			Bytes: data,
 		})
 		result.Caption = caption
-		ctx.API().Send(result)
+		ctx.Chat().SendPhoto(result)
 	},
 }
 
 func getPhoto(ctx *bot.Context, from int64, minSize int) (image.Image, error) {
-	ph, err := ctx.API().GetUserProfilePhotos(tgbotapi.NewUserProfilePhotos(from))
-	if err != nil {
-		return nil, err
-	}
+	ph := ctx.GetUserPhotos(from)
 	if ph.TotalCount == 0 {
 		return nil, nil
 	}
 
-	var fc tgbotapi.FileConfig
+	var fid string
 	for _, p := range ph.Photos[0] {
 		if p.Height >= minSize {
-			fc.FileID = p.FileID
+			fid = p.FileID
 			break
 		}
 	}
-	resp, err := ctx.Download(fc)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	i, _, err := utils.Decode(resp.Body)
+	r, w := io.Pipe()
+	defer w.Close()
+	defer r.Close()
+	go ctx.Download(fid, w)
+	i, _, err := utils.Decode(r)
 	return i, err
 }
 

@@ -10,7 +10,7 @@ var ping = Command{
 	Cmd:         "ping",
 	Description: "check the bot for availability",
 	Run: func(ctx *Context, _ *tgbotapi.Message, _ []string) {
-		ctx.SendText("pong")
+		ctx.ReplyText("pong")
 	},
 }
 
