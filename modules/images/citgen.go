@@ -58,12 +58,10 @@ var CitgenCmd = bot.Command{
 			ctx.ReplyText(err.Error())
 		}
 
-		result := tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileBytes{
+		ctx.Chat().SendPhoto(bot.NewPhoto(caption, tgbotapi.FileBytes{
 			Name:  "citgen.png",
 			Bytes: data,
-		})
-		result.Caption = caption
-		ctx.Chat().SendPhoto(result)
+		}))
 	},
 }
 

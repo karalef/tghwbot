@@ -20,6 +20,6 @@ type Command struct {
 // Arg type.
 type Arg struct {
 	Required bool
-	Names    []string
+	Name     string
 	Consts   []string
 }

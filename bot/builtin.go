@@ -20,7 +20,7 @@ func makeHelp(b *Bot) *Command {
 		Description: "help",
 		Args: []Arg{
 			{
-				Names: []string{"command"},
+				Name: "command",
 			},
 		},
 		Run: func(ctx *Context, _ *tgbotapi.Message, args []string) {
@@ -58,11 +58,10 @@ func generateHelp(c *Command) (string, tgbotapi.MessageEntity) {
 		} else {
 			sb.WriteByte('{')
 		}
-		if len(a.Names) > 0 {
-			sb.WriteString(strings.Join(a.Names, "|"))
-			sb.WriteByte('|')
-		}
+		sb.WriteString(a.Name)
+
 		if len(a.Consts) > 0 {
+			sb.WriteByte(':')
 			sb.WriteString("\"" + strings.Join(a.Consts, "\"|\"") + "\"")
 		}
 		if a.Required {

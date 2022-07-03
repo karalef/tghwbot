@@ -17,6 +17,7 @@ func (b *Bot) makeContext(cmd *Command, msg *tgbotapi.Message) *Context {
 	}
 }
 
+// Context type.
 type Context struct {
 	api  *tgbotapi.BotAPI
 	cmd  *Command
@@ -28,14 +29,17 @@ func (c *Context) err(e error) {
 	if e == nil {
 		return
 	}
+	println(e.Error())
 	//TODO
 	c.Close()
 }
 
+// Close stops command execution.
 func (c *Context) Close() {
 	runtime.Goexit()
 }
 
+// OpenChat makes chat interface.
 func (c *Context) OpenChat(chatID int64) *Chat {
 	return &Chat{
 		ctx:    c,
@@ -43,6 +47,7 @@ func (c *Context) OpenChat(chatID int64) *Chat {
 	}
 }
 
+// OpenChatUsername makes chat interface by username intead of id.
 func (c *Context) OpenChatUsername(username string) *Chat {
 	return &Chat{
 		ctx:      c,
@@ -50,6 +55,7 @@ func (c *Context) OpenChatUsername(username string) *Chat {
 	}
 }
 
+// Chat makes current chat interface.
 func (c *Context) Chat() *Chat {
 	return c.OpenChat(c.chat)
 }
@@ -81,15 +87,24 @@ func (c *Context) GetUserPhotos(userID int64) tgbotapi.UserProfilePhotos {
 	return p
 }
 
-func (c *Context) ReplyMessage(msg tgbotapi.MessageConfig) {
-	c.api.Send(msg)
+func (c *Context) MessageClose(msg MessageConfig) {
+	c.Chat().Send(msg)
+	c.Close()
+}
+
+func (c *Context) TextClose(text string) {
+	c.Chat().Send(MessageConfig{MsgText: MsgText{Text: text}})
 	c.Close()
 }
 
 func (c *Context) ReplyText(text string, ents ...tgbotapi.MessageEntity) {
-	m := tgbotapi.NewMessage(c.msg.Chat.ID, text)
-	m.Entities = ents
-	c.ReplyMessage(m)
+	c.Chat().Send(MessageConfig{
+		MsgText: MsgText{
+			Text:     text,
+			Entities: ents,
+		},
+		ReplyToMessageID: c.msg.MessageID,
+	})
 	c.Close()
 }
 
