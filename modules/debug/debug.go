@@ -9,7 +9,7 @@ import (
 	"tghwbot/common/rt"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"gopkg.in/telebot.v3"
 )
 
 var DebugCmd = bot.Command{
@@ -20,7 +20,7 @@ var DebugCmd = bot.Command{
 			Consts: []string{"obj", "stat", "gc"},
 		},
 	},
-	Run: func(ctx *bot.Context, msg *tgbotapi.Message, args []string) {
+	Run: func(ctx *bot.Context, msg *telebot.Message, args []string) {
 		var out string
 		if len(args) == 0 {
 			out = memStats(false)
@@ -34,7 +34,7 @@ var DebugCmd = bot.Command{
 				out = memStats(true)
 			}
 		}
-		ctx.ReplyText(out)
+		ctx.Send(out)
 	},
 }
 

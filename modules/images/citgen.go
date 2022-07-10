@@ -8,36 +8,36 @@ import (
 	"image/draw"
 	"image/png"
 	"io"
-	"log"
 	"strings"
 	"tghwbot/bot"
 	"tghwbot/modules/images/fonts"
 	"tghwbot/modules/images/utils"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
+	"gopkg.in/telebot.v3"
 )
 
 var CitgenCmd = bot.Command{
 	Cmd:         "citgen",
 	Description: "Генерация цитаты",
-	Run: func(ctx *bot.Context, msg *tgbotapi.Message, args []string) {
-		if msg.ReplyToMessage == nil {
-			ctx.ReplyText("Ответьте на сообщение")
+	Run: func(ctx *bot.Context, msg *telebot.Message, args []string) {
+		if msg.ReplyTo == nil {
+			ctx.ReplyClose("Ответьте на сообщение")
 		}
-		from := msg.ReplyToMessage.From
-		text := msg.ReplyToMessage.Text
-		date := msg.ReplyToMessage.Time()
+		from := msg.ReplyTo.Sender
+		text := msg.ReplyTo.Text
+		date := msg.ReplyTo.Time()
+		caption := ""
 		if text == "" {
-			ctx.ReplyText("Сообщение не содержит текста")
+			ctx.ReplyClose("Сообщение не содержит текста")
 		}
 
-		caption := ""
+		log := ctx.Logger()
 		photo, err := getPhoto(ctx, from.ID, 200)
 		if err != nil {
-			log.Println("citgen:", err.Error())
+			log.Warn("citgen: %s", err.Error())
 			caption = err.Error()
 		}
 
@@ -47,42 +47,35 @@ var CitgenCmd = bot.Command{
 			citgenFlagSet.BoolVar(&config.PhotoQuad, "q", false, "")
 			citgenFlagSet.Parse(args)
 		}
-
-		user := from.UserName
+		user := from.Username
 		if user == "" || strings.ReplaceAll(user, " ", "") == "" {
 			user = from.FirstName + from.LastName
 		}
-		data, err := config.GeneratePNGBytes(photo, user, text, date, from.ID == msg.From.ID)
+		data, err := config.GeneratePNGReader(photo, user, text, date, from.ID == msg.Sender.ID)
 		if err != nil {
-			log.Println("citgen generate:", err.Error())
-			ctx.ReplyText(err.Error())
+			log.Error("citgen generate: %s", err.Error())
+			ctx.ReplyClose(err.Error())
 		}
-
-		ctx.Chat().SendPhoto(bot.NewPhoto(caption, tgbotapi.FileBytes{
-			Name:  "citgen.png",
-			Bytes: data,
-		}))
+		ctx.Chat().SendPhoto(bot.NewPhoto(data, caption), nil)
 	},
 }
 
 func getPhoto(ctx *bot.Context, from int64, minSize int) (image.Image, error) {
 	ph := ctx.GetUserPhotos(from)
-	if ph.TotalCount == 0 {
+	if len(ph) == 0 {
 		return nil, nil
 	}
 
 	var fid string
-	for _, p := range ph.Photos[0] {
+	for _, p := range ph {
 		if p.Height >= minSize {
 			fid = p.FileID
 			break
 		}
 	}
-	r, w := io.Pipe()
-	defer w.Close()
-	defer r.Close()
-	go ctx.Download(fid, w)
-	i, _, err := utils.Decode(r)
+	rc := ctx.Download(fid)
+	i, _, err := utils.Decode(rc)
+	rc.Close()
 	return i, err
 }
 
@@ -107,7 +100,7 @@ type Citgen struct {
 	BG, FG    color.Color
 }
 
-func (c *Citgen) GeneratePNGBytes(photo image.Image, name, quote string, t time.Time, self bool) ([]byte, error) {
+func (c *Citgen) GeneratePNGReader(photo image.Image, name, quote string, t time.Time, self bool) (io.Reader, error) {
 	p, err := c.Generate(photo, name, quote, t, self)
 	if err != nil {
 		return nil, err
@@ -117,7 +110,7 @@ func (c *Citgen) GeneratePNGBytes(photo image.Image, name, quote string, t time.
 	if err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), nil
+	return buf, nil
 }
 
 func (c *Citgen) Generate(photo image.Image, name, quote string, t time.Time, self bool) (image.Image, error) {

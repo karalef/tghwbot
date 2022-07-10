@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"tghwbot/bot"
+	"tghwbot/logger"
 	"tghwbot/modules/debug"
 	"tghwbot/modules/images"
 	"tghwbot/modules/random"
@@ -19,6 +19,8 @@ func main() {
 	println(wfs.ExecPath())
 	println("PID", os.Getpid())
 
+	log := logger.New(logger.DefaultWriter, "HwBot")
+
 	cmds := []*bot.Command{
 		&debug.DebugCmd,
 		&random.Flip,
@@ -28,9 +30,9 @@ func main() {
 		&text.Gen,
 		&images.CitgenCmd,
 	}
-	b, err := bot.New(os.Getenv("TOKEN"), cmds...)
+	b, err := bot.New(os.Getenv("TOKEN"), log, cmds...)
 	if err != nil {
-		log.Panicf("tg auth: %s", err.Error())
+		panic(err)
 	}
 
 	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
@@ -38,10 +40,10 @@ func main() {
 
 	switch err {
 	case nil:
-		log.Print("stopping without error")
+		log.Info("stopping without error")
 	case context.Canceled:
-		log.Print("stopping by os signal")
+		log.Info("stopping by os signal")
 	default:
-		log.Fatalf("bot finished with an error: %s", err)
+		log.Error("bot finished with an error: %s", err)
 	}
 }
