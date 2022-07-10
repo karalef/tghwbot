@@ -2,19 +2,30 @@ package bot
 
 import (
 	"context"
+	"net/http"
 	"strings"
+	"tghwbot/logger"
+	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"gopkg.in/telebot.v3"
 )
 
 // New creates new bot.
-func New(token string, cmds ...*Command) (*Bot, error) {
-	api, err := tgbotapi.NewBotAPI(token)
+func New(token string, log *logger.Logger, cmds ...*Command) (*Bot, error) {
+	api, err := telebot.NewBot(telebot.Settings{
+		Token:   token,
+		Updates: 5,
+		Poller: &telebot.LongPoller{
+			Timeout: time.Second * 20,
+		},
+		Client: &http.Client{},
+	})
 	if err != nil {
 		return nil, err
 	}
 	b := &Bot{
 		api:  api,
+		log:  log,
 		cmds: cmds,
 	}
 	b.cmds = append(b.cmds, &ping, makeHelp(b))
@@ -23,27 +34,20 @@ func New(token string, cmds ...*Command) (*Bot, error) {
 
 // Bot type.
 type Bot struct {
-	api  *tgbotapi.BotAPI
+	api  *telebot.Bot
+	log  *logger.Logger
 	cmds []*Command
 }
 
-func (b *Bot) close() {
-	b.api.StopReceivingUpdates()
-	b.cmds = nil
-}
-
 func (b *Bot) setupCommands() error {
-	cfg := tgbotapi.SetMyCommandsConfig{
-		Commands: make([]tgbotapi.BotCommand, len(b.cmds)),
-	}
+	commands := make([]telebot.Command, len(b.cmds))
 	for i := range b.cmds {
-		cfg.Commands[i] = tgbotapi.BotCommand{
-			Command:     b.cmds[i].Cmd,
+		commands[i] = telebot.Command{
+			Text:        b.cmds[i].Cmd,
 			Description: b.cmds[i].Description,
 		}
 	}
-	_, err := b.api.Request(cfg)
-	return err
+	return b.api.SetCommands(commands)
 }
 
 // Run starts bot.
@@ -52,31 +56,27 @@ func (b *Bot) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	ch := b.api.GetUpdatesChan(tgbotapi.UpdateConfig{
-		Timeout: 60,
-	})
+
+	stop := make(chan struct{})
+	b.api.Poller.Poll(b.api, b.api.Updates, stop)
 
 	for {
-		var upd tgbotapi.Update
+		var upd telebot.Update
 		select {
 		case <-ctx.Done():
-			b.close()
+			close(stop)
 			return context.Canceled
-		case upd = <-ch:
+		case upd = <-b.api.Updates:
 		}
 		switch {
 		case upd.Message != nil:
 			b.onMessage(upd.Message)
-		case upd.CallbackQuery != nil:
-			b.onCallbackQuery(upd.CallbackQuery)
 		}
 	}
 }
 
-func (b *Bot) onCallbackQuery(upd *tgbotapi.CallbackQuery) {}
-
-func (b *Bot) onMessage(upd *tgbotapi.Message) {
-	if upd.Chat.IsChannel() {
+func (b *Bot) onMessage(upd *telebot.Message) {
+	if upd.FromChannel() {
 		return
 	}
 
@@ -100,7 +100,7 @@ func (b *Bot) parseCommand(c string) (cmd *Command, args []string) {
 	split := strings.Split(c[1:], " ")
 	c, args = split[0], split[1:]
 	if i := strings.Index(c, "@"); i != -1 && len(c) > i+1 {
-		if b.api.Self.UserName != c[i+1:] {
+		if b.api.Me.Username != c[i+1:] {
 			return nil, nil
 		}
 		c = c[:i]

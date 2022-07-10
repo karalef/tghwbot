@@ -1,8 +1,6 @@
 package bot
 
-import (
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-)
+import "gopkg.in/telebot.v3"
 
 // Prefix is the character with which commands must begin.
 const Prefix = '/'
@@ -10,7 +8,7 @@ const Prefix = '/'
 // Command respresents conversation command.
 type Command struct {
 	Cmd string
-	Run func(*Context, *tgbotapi.Message, []string)
+	Run func(*Context, *telebot.Message, []string)
 
 	Description string
 	Help        string
