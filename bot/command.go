@@ -1,6 +1,6 @@
 package bot
 
-import "gopkg.in/telebot.v3"
+import "tghwbot/bot/tg"
 
 // Prefix is the character with which commands must begin.
 const Prefix = '/'
@@ -8,7 +8,7 @@ const Prefix = '/'
 // Command respresents conversation command.
 type Command struct {
 	Cmd string
-	Run func(*Context, *telebot.Message, []string)
+	Run func(*Context, *tg.Message, []string)
 
 	Description string
 	Help        string

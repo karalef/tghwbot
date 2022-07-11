@@ -10,23 +10,23 @@ import (
 	"io"
 	"strings"
 	"tghwbot/bot"
+	"tghwbot/bot/tg"
 	"tghwbot/modules/images/fonts"
 	"tghwbot/modules/images/utils"
 	"time"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
-	"gopkg.in/telebot.v3"
 )
 
 var CitgenCmd = bot.Command{
 	Cmd:         "citgen",
 	Description: "Генерация цитаты",
-	Run: func(ctx *bot.Context, msg *telebot.Message, args []string) {
+	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		if msg.ReplyTo == nil {
 			ctx.ReplyClose("Ответьте на сообщение")
 		}
-		from := msg.ReplyTo.Sender
+		from := msg.ReplyTo.From
 		text := msg.ReplyTo.Text
 		date := msg.ReplyTo.Time()
 		caption := ""
@@ -51,7 +51,7 @@ var CitgenCmd = bot.Command{
 		if user == "" || strings.ReplaceAll(user, " ", "") == "" {
 			user = from.FirstName + from.LastName
 		}
-		data, err := config.GeneratePNGReader(photo, user, text, date, from.ID == msg.Sender.ID)
+		data, err := config.GeneratePNGReader(photo, user, text, date, from.ID == msg.From.ID)
 		if err != nil {
 			log.Error("citgen generate: %s", err.Error())
 			ctx.ReplyClose(err.Error())

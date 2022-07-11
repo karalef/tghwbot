@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"runtime"
 	"tghwbot/bot"
+	"tghwbot/bot/tg"
 	"tghwbot/common/format"
 	"tghwbot/common/rt"
 	"time"
-
-	"gopkg.in/telebot.v3"
 )
 
 var DebugCmd = bot.Command{
@@ -20,7 +19,7 @@ var DebugCmd = bot.Command{
 			Consts: []string{"obj", "stat", "gc"},
 		},
 	},
-	Run: func(ctx *bot.Context, msg *telebot.Message, args []string) {
+	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		var out string
 		if len(args) == 0 {
 			out = memStats(false)

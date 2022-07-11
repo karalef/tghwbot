@@ -6,9 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"tghwbot/bot"
+	"tghwbot/bot/tg"
 	"time"
-
-	"gopkg.in/telebot.v3"
 )
 
 var myRand = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -25,7 +24,7 @@ func randP(max int, power float64) int {
 var Number = bot.Command{
 	Cmd:         "rand",
 	Description: "random number",
-	Run: func(ctx *bot.Context, msg *telebot.Message, args []string) {
+	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		var max int64 = 100
 		if len(args) > 0 {
 			num := args[0]
@@ -42,7 +41,7 @@ var Number = bot.Command{
 var Flip = bot.Command{
 	Cmd:         "flip",
 	Description: "flip a coin",
-	Run: func(ctx *bot.Context, msg *telebot.Message, args []string) {
+	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		r := "Выпала решка"
 		if myRand.Intn(2) == 1 {
 			r = "Выпал орёл"
@@ -54,7 +53,7 @@ var Flip = bot.Command{
 var Info = bot.Command{
 	Cmd:         "info",
 	Description: "event probability",
-	Run: func(ctx *bot.Context, msg *telebot.Message, args []string) {
+	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		if len(args) == 0 {
 			ctx.ReplyClose("Укажите событие")
 		}
@@ -67,7 +66,7 @@ var Info = bot.Command{
 var When = bot.Command{
 	Cmd:         "when",
 	Description: "Когда произойдет событие",
-	Run: func(ctx *bot.Context, msg *telebot.Message, args []string) {
+	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		if len(args) == 0 {
 			ctx.ReplyClose("Укажите событие")
 		}

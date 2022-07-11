@@ -2,14 +2,13 @@ package bot
 
 import (
 	"strings"
-
-	"gopkg.in/telebot.v3"
+	"tghwbot/bot/tg"
 )
 
 var ping = Command{
 	Cmd:         "ping",
 	Description: "check the bot for availability",
-	Run: func(ctx *Context, _ *telebot.Message, _ []string) {
+	Run: func(ctx *Context, _ *tg.Message, _ []string) {
 		ctx.Send("pong")
 	},
 }
@@ -26,14 +25,14 @@ var help = Command{
 
 func makeHelp(b *Bot) *Command {
 	h := help
-	h.Run = func(ctx *Context, msg *telebot.Message, args []string) {
+	h.Run = func(ctx *Context, msg *tg.Message, args []string) {
 		if len(args) > 0 {
 			for _, c := range b.cmds {
 				if c.Cmd != args[0] {
 					continue
 				}
 				h, e := generateHelp(c)
-				ctx.ReplyClose(h, &telebot.SendOptions{Entities: e})
+				ctx.ReplyClose(h, &SendOptions{Entities: e})
 			}
 			ctx.ReplyClose("command not found")
 		}
@@ -50,7 +49,7 @@ func makeHelp(b *Bot) *Command {
 	return &h
 }
 
-func generateHelp(c *Command) (string, telebot.Entities) {
+func generateHelp(c *Command) (string, []tg.MessageEntity) {
 	sb := strings.Builder{}
 	sb.WriteByte(Prefix)
 	sb.WriteString(c.Cmd)
@@ -75,7 +74,7 @@ func generateHelp(c *Command) (string, telebot.Entities) {
 	}
 	sb.WriteByte('\n')
 	sb.WriteString(c.Description)
-	return sb.String(), telebot.Entities{telebot.MessageEntity{
+	return sb.String(), []tg.MessageEntity{tg.MessageEntity{
 		Type:   "pre",
 		Offset: 0,
 		Length: sb.Len() - len(c.Description) - 1,

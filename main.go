@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 	"tghwbot/bot"
-	"tghwbot/logger"
+	"tghwbot/bot/logger"
 	"tghwbot/modules/debug"
 	"tghwbot/modules/images"
 	"tghwbot/modules/random"
