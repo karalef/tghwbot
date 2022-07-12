@@ -3,11 +3,14 @@ package text
 import (
 	"log"
 	"strings"
+	"sync"
 	"tghwbot/bot"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
+
+var textgenMut sync.Mutex
 
 var Gen = bot.Command{
 	Cmd:         "textgen",
@@ -25,6 +28,10 @@ var Gen = bot.Command{
 				Text: "generating",
 			},
 		}).MessageID
+
+		textgenMut.Lock()
+		defer textgenMut.Unlock()
+
 		ch := porfirevichAsync(query, 40)
 		t := time.NewTicker(time.Second)
 		defer t.Stop()
