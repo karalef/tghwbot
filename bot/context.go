@@ -2,6 +2,7 @@ package bot
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"runtime"
 
@@ -29,7 +30,7 @@ func (c *Context) err(e error) {
 	if e == nil {
 		return
 	}
-	println(e.Error())
+	log.Println("telegram: ", e.Error())
 	//TODO
 	c.Close()
 }
