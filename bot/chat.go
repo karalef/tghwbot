@@ -42,6 +42,12 @@ func (c *Chat) Send(msg MessageConfig) tgbotapi.Message {
 	return m
 }
 
+func (c *Chat) Edit(msgID int, text string) tgbotapi.Message {
+	m, err := c.ctx.api.Send(tgbotapi.NewEditMessageText(c.chatID, msgID, text))
+	c.ctx.err(err)
+	return m
+}
+
 func NewPhoto(caption string, file tgbotapi.RequestFileData) PhotoConfig {
 	return PhotoConfig{
 		MsgText: MsgText{

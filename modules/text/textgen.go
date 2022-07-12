@@ -4,6 +4,7 @@ import (
 	"log"
 	"strings"
 	"tghwbot/bot"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -17,16 +18,36 @@ var Gen = bot.Command{
 			ctx.ReplyText("Придумайте начало истории")
 			return
 		}
-		replies, err := porfirevich(query, 30)
-		if err != nil {
-			log.Println("porfirevich error:", err.Error())
-			ctx.ReplyText(err.Error())
+		chat := ctx.Chat()
+		replyID := chat.Send(bot.MessageConfig{
+			ReplyToMessageID: msg.MessageID,
+			MsgText: bot.MsgText{
+				Text: "generating",
+			},
+		}).MessageID
+		ch := porfirevichAsync(query, 40)
+		t := time.NewTicker(time.Second)
+		defer t.Stop()
+		for i := 1; ; i++ {
+			select {
+			case result := <-ch:
+				if result.Error != nil {
+					log.Println("porfirevich error:", result.Error.Error())
+					chat.Edit(replyID, result.Error.Error())
+					return
+				}
+				var text string
+				for _, r := range result.Replies {
+					text += query + r + "\n\n"
+				}
+				chat.Edit(replyID, text)
+				return
+			case <-t.C:
+				chat.Edit(replyID, "generating"+strings.Repeat(".", i))
+				if i == 3 {
+					i = 0
+				}
+			}
 		}
-
-		var text string
-		for _, r := range replies {
-			text += query + r + "\n\n"
-		}
-		ctx.ReplyText(text)
 	},
 }
