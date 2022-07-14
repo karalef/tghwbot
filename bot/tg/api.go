@@ -6,7 +6,10 @@ import (
 )
 
 // DefaultAPIURL is a default url for telegram api.
-const DefaultAPIURL = "https://api.telegram.org"
+const DefaultAPIURL = "https://api.telegram.org/bot"
+
+// DefaultFileURL is a default url for downloading files.
+const DefaultFileURL = "https://api.telegram.org/file/bot"
 
 // APIResponse represents telegram api response.
 type APIResponse struct {

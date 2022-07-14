@@ -3,7 +3,7 @@ package bot
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"io"
 	"net/url"
 	"strconv"
 	"tghwbot/bot/internal"
@@ -79,16 +79,15 @@ func (b *Bot) performRequest(method string, p params, res interface{}) error {
 }
 
 func (b *Bot) performRequestContext(ctx context.Context, method string, p params, res interface{}) error {
-	u := b.apiURL + "/bot" + b.token + "/" + method
+	u := b.apiURL + b.token + "/" + method
 	data := p.build()
 	resp, err := internal.PostFormContext(ctx, b.client, u, data)
-	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return context.Canceled
-		}
-		return &Error{
-			Err: err,
-		}
+	switch err {
+	case nil:
+	case context.Canceled, context.DeadlineExceeded:
+		return err
+	default:
+		return &Error{Err: err}
 	}
 	defer resp.Body.Close()
 
@@ -121,12 +120,21 @@ func (b *Bot) performRequestContext(ctx context.Context, method string, p params
 	}
 }
 
+func (b *Bot) downloadFile(path string) ([]byte, error) {
+	resp, err := b.client.Get(tg.DefaultFileURL + b.token + "/" + path)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
+}
+
 func (b *Bot) getMe() (*tg.User, error) {
 	var u tg.User
 	return &u, b.performRequest("getMe", nil, &u)
 }
 
-func (b *Bot) getUpdates(ctx context.Context, offset, timeout int, allowed []string) ([]tg.Update, error) {
+func (b *Bot) getUpdates(ctx context.Context, offset, timeout int, allowed ...string) ([]tg.Update, error) {
 	p := params{}
 	p.addInt("offset", offset)
 	//p.addInt("limit", limit)
@@ -160,7 +168,11 @@ func (p *commandParams) params() params {
 	return v
 }
 
-func (b *Bot) getCommands(p *commandParams) ([]tg.Command, error) {
+func (b *Bot) getCommands(s *commandScope, lang string) ([]tg.Command, error) {
+	p := commandParams{
+		Scope: s,
+		Lang:  lang,
+	}
 	var cmds []tg.Command
 	return cmds, b.performRequest("getMyCommands", p.params(), &cmds)
 }
@@ -169,6 +181,10 @@ func (b *Bot) setCommands(p *commandParams) error {
 	return b.performRequest("setMyCommands", p.params(), nil)
 }
 
-func (b *Bot) deleteCommands(p *commandParams) error {
+func (b *Bot) deleteCommands(s *commandScope, lang string) error {
+	p := commandParams{
+		Scope: s,
+		Lang:  lang,
+	}
 	return b.performRequest("deleteMyCommands", p.params(), nil)
 }

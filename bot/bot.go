@@ -34,7 +34,7 @@ type Bot struct {
 	client *http.Client
 	log    *logger.Logger
 
-	sync bool
+	stop context.CancelFunc
 	cmds []*Command
 
 	Me *tg.User
@@ -51,34 +51,50 @@ func (b *Bot) setupCommands() error {
 	return b.setCommands(&commandParams{Commands: commands})
 }
 
+// Stop stops polling for updates.
+func (b *Bot) Stop() {
+	if b.stop != nil {
+		b.stop()
+	}
+}
+
 // Run starts bot.
+// Returns nil if context is closed.
 func (b *Bot) Run(ctx context.Context, lastUpdate int) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx, b.stop = context.WithCancel(ctx)
+
 	err := b.setupCommands()
 	if err != nil {
 		return err
 	}
 
 	for {
-		upds, err := b.getUpdates(ctx, lastUpdate+1, 30, nil)
-		if err != nil {
-			//TODO
+		upds, err := b.getUpdates(ctx, lastUpdate+1, 30, "message")
+		switch err {
+		case nil:
+		case context.Canceled, context.DeadlineExceeded:
+			return nil
+		default:
 			return err
 		}
-		for _, upd := range upds {
-			switch {
-			case upd.Message != nil:
-				b.onMessage(upd.Message)
-			}
-			lastUpdate = upd.ID
+		for i := range upds {
+			go b.handle(&upds[i])
+			lastUpdate = upds[i].ID
 		}
 	}
 }
 
-func (b *Bot) onMessage(msg *tg.Message) {
-	if msg.Chat.IsChannel() {
-		return
+func (b *Bot) handle(upd *tg.Update) {
+	switch {
+	case upd.Message != nil:
+		b.onMessage(upd.Message)
 	}
+}
 
+func (b *Bot) onMessage(msg *tg.Message) {
 	text := msg.Text
 	if text == "" {
 		text = msg.Caption
