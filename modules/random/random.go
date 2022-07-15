@@ -32,10 +32,10 @@ var Number = bot.Command{
 			var err error
 			max, err = strconv.ParseInt(num, 10, 64)
 			if err != nil || max <= 0 {
-				ctx.ReplyText("Укажите число от 1 до MaxInt64")
+				ctx.ReplyText("Specify a number between 1 and MaxInt64")
 			}
 		}
-		ctx.ReplyText("Выпало число " + strconv.FormatInt(myRand.Int63n(max), 10))
+		ctx.ReplyText(strconv.FormatInt(myRand.Int63n(max), 10))
 	},
 }
 
@@ -43,9 +43,9 @@ var Flip = bot.Command{
 	Cmd:         "flip",
 	Description: "flip a coin",
 	Run: func(ctx *bot.Context, msg *tgbotapi.Message, args []string) {
-		r := "Выпала решка"
+		r := "Tails"
 		if myRand.Intn(2) == 1 {
-			r = "Выпал орёл"
+			r = "Heads"
 		}
 		ctx.ReplyText(r)
 	},
@@ -53,23 +53,23 @@ var Flip = bot.Command{
 
 var Info = bot.Command{
 	Cmd:         "info",
-	Description: "event probability",
+	Description: "random event probability",
 	Run: func(ctx *bot.Context, msg *tgbotapi.Message, args []string) {
 		if len(args) == 0 {
-			ctx.ReplyText("Укажите событие")
+			ctx.ReplyText("Specify the event")
 		}
 		p := myRand.Intn(101)
 		e := strings.Join(args, " ")
-		ctx.ReplyText("Вероятность того, что " + e + " — " + strconv.Itoa(p) + "%")
+		ctx.ReplyText("The probability that " + e + " — " + strconv.Itoa(p) + "%")
 	},
 }
 
 var When = bot.Command{
 	Cmd:         "when",
-	Description: "Когда произойдет событие",
+	Description: "random date of the event",
 	Run: func(ctx *bot.Context, msg *tgbotapi.Message, args []string) {
 		if len(args) == 0 {
-			ctx.ReplyText("Укажите событие")
+			ctx.ReplyText("Specify the event")
 		}
 		t := time.Now().AddDate(randP(51, 1.5), randInt(12), randInt(31))
 		e := strings.Join(args, " ")

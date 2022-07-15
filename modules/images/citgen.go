@@ -22,16 +22,16 @@ import (
 
 var CitgenCmd = bot.Command{
 	Cmd:         "citgen",
-	Description: "Генерация цитаты",
+	Description: "quote generation",
 	Run: func(ctx *bot.Context, msg *tgbotapi.Message, args []string) {
 		if msg.ReplyToMessage == nil {
-			ctx.ReplyText("Ответьте на сообщение")
+			ctx.ReplyText("Reply to the message")
 		}
 		from := msg.ReplyToMessage.From
 		text := msg.ReplyToMessage.Text
 		date := msg.ReplyToMessage.Time()
 		if text == "" {
-			ctx.ReplyText("Сообщение не содержит текста")
+			ctx.ReplyText("The message contains no text")
 		}
 
 		caption := ""
