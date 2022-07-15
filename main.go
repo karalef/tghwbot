@@ -11,6 +11,7 @@ import (
 	"tghwbot/modules/images"
 	"tghwbot/modules/random"
 	"tghwbot/modules/text"
+	"tghwbot/modules/wikihow"
 
 	"github.com/Toffee-iZt/wfs"
 )
@@ -27,6 +28,7 @@ func main() {
 		&random.When,
 		&text.Gen,
 		&images.CitgenCmd,
+		&wikihow.Wikihow,
 	}
 	b, err := bot.New(os.Getenv("TOKEN"), cmds...)
 	if err != nil {
