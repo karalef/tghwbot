@@ -27,7 +27,9 @@ func main() {
 		&random.Number,
 		&random.When,
 		&text.Gen,
+		&text.Buzzword,
 		&images.CitgenCmd,
+		&images.Search,
 		&wikihow.Wikihow,
 	}
 	b, err := bot.New(os.Getenv("TOKEN"), cmds...)
