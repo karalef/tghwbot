@@ -11,6 +11,10 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+func Rand(max int) int {
+	return randInt(max)
+}
+
 var myRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func randInt(max int) int {
