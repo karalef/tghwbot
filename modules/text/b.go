@@ -2,6 +2,7 @@ package text
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"tghwbot/bot"
@@ -16,6 +17,7 @@ var Buzzword = bot.Command{
 		resp, err := http.Get("https://corporatebs-generator.sameerkumar.website/")
 		if err != nil {
 			log.Println("bullshit generator:", err.Error())
+			err = errors.Unwrap(err)
 			ctx.ReplyText(err.Error())
 		}
 		defer resp.Body.Close()

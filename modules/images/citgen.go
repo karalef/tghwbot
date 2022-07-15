@@ -52,7 +52,7 @@ var CitgenCmd = bot.Command{
 		if user == "" || strings.ReplaceAll(user, " ", "") == "" {
 			user = from.FirstName + from.LastName
 		}
-		data, err := config.GeneratePNGBytes(photo, user, text, date, from.ID == msg.From.ID)
+		data, err := config.GeneratePNGBytes(photo, user, text, &date)
 		if err != nil {
 			log.Println("citgen generate:", err.Error())
 			ctx.ReplyText(err.Error())
@@ -107,8 +107,8 @@ type Citgen struct {
 	BG, FG    color.Color
 }
 
-func (c *Citgen) GeneratePNGBytes(photo image.Image, name, quote string, t time.Time, self bool) ([]byte, error) {
-	p, err := c.Generate(photo, name, quote, t, self)
+func (c *Citgen) GeneratePNGBytes(photo image.Image, name, quote string, t *time.Time) ([]byte, error) {
+	p, err := c.Generate(photo, name, quote, t)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (c *Citgen) GeneratePNGBytes(photo image.Image, name, quote string, t time.
 	return buf.Bytes(), nil
 }
 
-func (c *Citgen) Generate(photo image.Image, name, quote string, t time.Time, self bool) (image.Image, error) {
+func (c *Citgen) Generate(photo image.Image, name, quote string, t *time.Time) (image.Image, error) {
 	if photo == nil {
 		photo = image.Rect(0, 0, c.PhotoSize, c.PhotoSize)
 	} else {
@@ -163,10 +163,12 @@ func (c *Citgen) Generate(photo image.Image, name, quote string, t time.Time, se
 	d.DrawString(name + " " + copyrightSymbol)
 
 	// draw time
-	ft := t.Format("02.01.2006 15:04")
-	d.Dot.X = fixed.I(img.Bounds().Dx() - c.Padding - fonts.StringWidth(d.Face, ft))
-	d.Dot.Y = fixed.I(img.Bounds().Dy() - c.Padding)
-	d.DrawString(ft)
+	if t != nil {
+		ft := t.Format("02.01.2006 15:04")
+		d.Dot.X = fixed.I(img.Bounds().Dx() - c.Padding - fonts.StringWidth(d.Face, ft))
+		d.Dot.Y = fixed.I(img.Bounds().Dy() - c.Padding)
+		d.DrawString(ft)
+	}
 
 	return img, nil
 }
