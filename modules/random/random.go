@@ -15,6 +15,10 @@ func Rand(max int) int {
 	return randInt(max)
 }
 
+func RandP(max int, power float64) int {
+	return randP(max, power)
+}
+
 var myRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func randInt(max int) int {

@@ -2,6 +2,7 @@ package images
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"net/url"
@@ -17,9 +18,13 @@ var Search = bot.Command{
 	Description: "random image",
 	Run: func(ctx *bot.Context, _ *tgbotapi.Message, args []string) {
 		q := url.QueryEscape(strings.Join(args, " "))
+		if q == "" {
+			ctx.ReplyText("Provide keywords")
+		}
 		resp, err := http.Get("https://imsea.herokuapp.com/api/1?q=" + q)
 		if err != nil {
-			log.Println("bullshit generator:", err.Error())
+			log.Println("image search:", err.Error())
+			err = errors.Unwrap(err)
 			ctx.ReplyText(err.Error())
 		}
 		defer resp.Body.Close()
@@ -28,7 +33,10 @@ var Search = bot.Command{
 			Results   []string `json:"results"`
 		}
 		json.NewDecoder(resp.Body).Decode(&res)
-		u := res.Results[random.Rand(len(res.Results))]
+		if len(res.Results) == 0 {
+			ctx.ReplyText("No results")
+		}
+		u := res.Results[random.RandP(len(res.Results), 1.4)]
 		ctx.Chat().SendPhoto(bot.NewPhoto(res.ImageName, tgbotapi.FileURL(u)))
 	},
 }
