@@ -28,8 +28,12 @@ func main() {
 		&random.When,
 		&text.Gen,
 		&text.Buzzword,
+		&text.Fact,
+		&text.Phrase,
+		&text.Quote,
 		&images.CitgenCmd,
 		&images.Search,
+		&images.Forza,
 		&wikihow.Wikihow,
 	}
 	b, err := bot.New(os.Getenv("TOKEN"), cmds...)
