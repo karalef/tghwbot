@@ -18,7 +18,7 @@ var Gen = bot.Command{
 	Run: func(ctx *bot.Context, msg *tgbotapi.Message, args []string) {
 		query := strings.Join(args, " ")
 		if query == "" {
-			ctx.ReplyText("Придумайте начало истории")
+			ctx.ReplyText("Think of the beginning of the story")
 			return
 		}
 		chat := ctx.Chat()
