@@ -86,3 +86,19 @@ func (c *Chat) SendPhoto(msg PhotoConfig) tgbotapi.Message {
 	c.ctx.err(err)
 	return m
 }
+
+type PhotoGroupConfig struct {
+	Photos              []tgbotapi.RequestFileData
+	DisableNotification bool
+	ReplyToMessageID    int
+}
+
+func (c *Chat) SendPhotoGroup(pg PhotoGroupConfig) []tgbotapi.Message {
+	mgc := tgbotapi.NewMediaGroup(c.chatID, make([]interface{}, 0, len(pg.Photos)))
+	for i := range pg.Photos {
+		mgc.Media = append(mgc.Media, tgbotapi.NewInputMediaPhoto(pg.Photos[i]))
+	}
+	m, err := c.ctx.api.SendMediaGroup(mgc)
+	c.ctx.err(err)
+	return m
+}
