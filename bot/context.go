@@ -34,15 +34,15 @@ func (c *Context) err(e error) {
 	c.Close()
 }
 
-func api[T any](c *Context, method string, p params) *T {
-	var result T
-	err := c.bot.performRequest(method, p, &result)
+func api[T any](c *Context, method string, p params) T {
+	result, err := performRequest[T](c.bot, method, p)
 	switch err.(type) {
 	case nil:
-		return &result
+		return result
 	case *tg.APIError:
 		c.bot.log.Warn("from '%s'\n%s", c.cmd.Cmd, err.Error())
 		c.Close()
+		return result
 	}
 
 	switch err {
@@ -51,7 +51,7 @@ func api[T any](c *Context, method string, p params) *T {
 		c.bot.log.Error(err.Error())
 	}
 	c.Close()
-	return nil
+	return result
 }
 
 // Close stops command execution.
@@ -83,19 +83,19 @@ func (c *Context) Chat() *Chat {
 }
 
 // GetMe returns basic information about the bot.
-func (c *Context) GetMe() *tg.User {
-	return c.bot.Me
+func (c *Context) GetMe() tg.User {
+	return *c.bot.Me
 }
 
+// GetUserPhotos returns a list of profile pictures for a user.
 func (c *Context) GetUserPhotos(userID int64) *tg.UserProfilePhotos {
-	p := params{}
-	p.addInt64("user_id", userID)
-	return api[tg.UserProfilePhotos](c, "getUserProfilePhotos", p)
+	p := params{}.set("user_id", userID)
+	return api[*tg.UserProfilePhotos](c, "getUserProfilePhotos", p)
 }
 
+// GetFile returns basic information about a file
+// and prepares it for downloading.
 func (c *Context) GetFile(fileID string) *tg.File {
-	p := params{
-		"file_id": fileID,
-	}
-	return api[tg.File](c, "getFile", p)
+	p := params{}.set("file_id", fileID)
+	return api[*tg.File](c, "getFile", p)
 }

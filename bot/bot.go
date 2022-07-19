@@ -10,11 +10,15 @@ import (
 
 // New creates new bot.
 func New(token string, log *logger.Logger, cmds ...*Command) (*Bot, error) {
+	if log == nil {
+		log = logger.New(logger.DefaultWriter, "")
+	}
 	b := Bot{
-		token:  token,
-		apiURL: tg.DefaultAPIURL,
-		client: &http.Client{},
-		log:    log,
+		token:   token,
+		apiURL:  tg.DefaultAPIURL,
+		fileURL: tg.DefaultFileURL,
+		client:  &http.Client{},
+		log:     log,
 	}
 
 	me, err := b.getMe()
@@ -29,10 +33,11 @@ func New(token string, log *logger.Logger, cmds ...*Command) (*Bot, error) {
 
 // Bot type.
 type Bot struct {
-	token  string
-	apiURL string
-	client *http.Client
-	log    *logger.Logger
+	token   string
+	apiURL  string
+	fileURL string
+	client  *http.Client
+	log     *logger.Logger
 
 	stop context.CancelFunc
 	cmds []*Command
@@ -81,7 +86,7 @@ func (b *Bot) Run(ctx context.Context, lastUpdate int) error {
 			return err
 		}
 		for i := range upds {
-			go b.handle(&upds[i])
+			b.handle(&upds[i])
 			lastUpdate = upds[i].ID
 		}
 	}

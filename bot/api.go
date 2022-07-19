@@ -22,79 +22,68 @@ func (e *Error) Error() string {
 	return e.Err.Error()
 }
 
-type params map[string]string
+type params url.Values
 
-func (p params) build() url.Values {
-	if p == nil {
-		return nil
-	}
-	vals := url.Values{}
-	for k, v := range p {
-		vals.Set(k, v)
-	}
-	return vals
-}
-
-func (p params) add(key, value string) {
-	if value != "" {
-		p[key] = value
-	}
-}
-
-func (p params) addInt(key string, value int) {
-	if value != 0 {
-		p[key] = strconv.Itoa(value)
-	}
-}
-
-func (p params) addInt64(key string, value int64) {
-	if value != 0 {
-		p[key] = strconv.FormatInt(value, 10)
-	}
-}
-
-func (p params) addBool(key string, value bool) {
-	if value {
-		p[key] = strconv.FormatBool(value)
-	}
-}
-
-func (p params) addFloat(key string, value float64) {
-	if value != 0 {
-		p[key] = strconv.FormatFloat(value, 'f', 6, 64)
-	}
-}
-
-func (p params) addJSON(key string, value interface{}) {
+func (p params) set(key string, value interface{}) params {
 	if value == nil {
-		return
+		return p
 	}
-
-	b, _ := json.Marshal(value)
-	p[key] = string(b)
+	vals := url.Values(p)
+	switch v := value.(type) {
+	case string:
+		if v != "" {
+			vals.Set(key, v)
+		}
+	case int:
+		if v != 0 {
+			vals.Set(key, strconv.Itoa(v))
+		}
+	case int64:
+		if v != 0 {
+			vals.Set(key, strconv.FormatInt(v, 10))
+		}
+	case bool:
+		if v {
+			vals.Set(key, strconv.FormatBool(v))
+		}
+	case float64:
+		if v != 0 {
+			vals.Set(key, strconv.FormatFloat(v, 'f', 6, 64))
+		}
+	default:
+		b, _ := json.Marshal(value)
+		vals.Set(key, string(b))
+	}
+	return p
 }
 
-func (b *Bot) performRequest(method string, p params, res interface{}) error {
-	return b.performRequestContext(context.Background(), method, p, res)
+func performRequest[T any](b *Bot, method string, p params) (T, error) {
+	return performRequestContext[T](context.Background(), b, method, p)
 }
 
-func (b *Bot) performRequestContext(ctx context.Context, method string, p params, res interface{}) error {
+func performRequestEmpty(b *Bot, method string, p params) error {
+	_, err := performRequest[internal.Empty](b, method, p)
+	return err
+}
+
+func performRequestContext[T any](ctx context.Context, b *Bot, method string, p params) (T, error) {
 	u := b.apiURL + b.token + "/" + method
-	data := p.build()
+	data := url.Values(p)
 	resp, err := internal.PostFormContext(ctx, b.client, u, data)
+
+	var nilResult T
 	switch err {
 	case nil:
 	case context.Canceled, context.DeadlineExceeded:
-		return err
+		return nilResult, err
 	default:
-		return &Error{Err: err}
+		return nilResult, &Error{Err: err}
 	}
 	defer resp.Body.Close()
 
-	var r tg.APIResponse
-	raw, err := internal.DecodeJSON(resp.Body, &r)
+	r, raw, err := internal.DecodeJSON[tg.APIResponse[T]](resp.Body)
 	if err != nil {
-		return &Error{
+		return nilResult, &Error{
 			Err:      err,
 			Method:   method,
 			Data:     data,
@@ -102,26 +91,14 @@ func (b *Bot) performRequestContext(ctx context.Context, method string, p params
 		}
 	}
 	if r.APIError != nil {
-		return r.APIError
+		return nilResult, r.APIError
 	}
 
-	if res == nil {
-		return nil
-	}
-	err = json.Unmarshal(r.Result, res)
-	if err == nil {
-		return nil
-	}
-	return &Error{
-		Err:      err,
-		Method:   method,
-		Data:     data,
-		Response: r.Result,
-	}
+	return r.Result, nil
 }
 
 func (b *Bot) downloadFile(path string) ([]byte, error) {
-	resp, err := b.client.Get(tg.DefaultFileURL + b.token + "/" + path)
+	resp, err := b.client.Get(b.fileURL + b.token + "/" + path)
 	if err != nil {
 		return nil, err
 	}
@@ -130,19 +107,17 @@ func (b *Bot) downloadFile(path string) ([]byte, error) {
 }
 
 func (b *Bot) getMe() (*tg.User, error) {
-	var u tg.User
-	return &u, b.performRequest("getMe", nil, &u)
+	return performRequest[*tg.User](b, "getMe", nil)
 }
 
 func (b *Bot) getUpdates(ctx context.Context, offset, timeout int, allowed ...string) ([]tg.Update, error) {
 	p := params{}
-	p.addInt("offset", offset)
-	//p.addInt("limit", limit)
-	p.addInt("timeout", timeout)
-	p.addJSON("allowed_updates", allowed)
+	p.set("offset", offset)
+	//p.set("limit", limit)
+	p.set("timeout", timeout)
+	p.set("allowed_updates", allowed)
 
-	var updates []tg.Update
-	return updates, b.performRequestContext(ctx, "getUpdates", p, &updates)
+	return performRequestContext[[]tg.Update](ctx, b, "getUpdates", p)
 }
 
 type commandScope struct {
@@ -162,9 +137,9 @@ func (p *commandParams) params() params {
 		return nil
 	}
 	v := params{}
-	v.add("language_code", p.Lang)
-	v.addJSON("scope", p.Scope)
-	v.addJSON("commands", p.Commands)
+	v.set("language_code", p.Lang)
+	v.set("scope", p.Scope)
+	v.set("commands", p.Commands)
 	return v
 }
 
@@ -173,12 +148,11 @@ func (b *Bot) getCommands(s *commandScope, lang string) ([]tg.Command, error) {
 		Scope: s,
 		Lang:  lang,
 	}
-	var cmds []tg.Command
-	return cmds, b.performRequest("getMyCommands", p.params(), &cmds)
+	return performRequest[[]tg.Command](b, "getMyCommands", p.params())
 }
 
 func (b *Bot) setCommands(p *commandParams) error {
-	return b.performRequest("setMyCommands", p.params(), nil)
+	return performRequestEmpty(b, "setMyCommands", p.params())
 }
 
 func (b *Bot) deleteCommands(s *commandScope, lang string) error {
@@ -186,5 +160,5 @@ func (b *Bot) deleteCommands(s *commandScope, lang string) error {
 		Scope: s,
 		Lang:  lang,
 	}
-	return b.performRequest("deleteMyCommands", p.params(), nil)
+	return performRequestEmpty(b, "deleteMyCommands", p.params())
 }

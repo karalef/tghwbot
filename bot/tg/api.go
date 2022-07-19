@@ -1,7 +1,6 @@
 package tg
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
@@ -12,9 +11,9 @@ const DefaultAPIURL = "https://api.telegram.org/bot"
 const DefaultFileURL = "https://api.telegram.org/file/bot"
 
 // APIResponse represents telegram api response.
-type APIResponse struct {
-	Ok     bool            `json:"ok"`
-	Result json.RawMessage `json:"result"`
+type APIResponse[T any] struct {
+	Ok     bool `json:"ok"`
+	Result T    `json:"result"`
 	*APIError
 }
 
