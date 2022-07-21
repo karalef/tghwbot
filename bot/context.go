@@ -1,116 +1,162 @@
 package bot
 
 import (
+	"context"
 	"io"
-	"log"
-	"net/http"
-	"runtime"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"strconv"
+	"tghwbot/bot/logger"
+	"tghwbot/bot/tg"
 )
 
-func (b *Bot) makeContext(cmd *Command, msg *tgbotapi.Message) *Context {
-	return &Context{
-		api:  b.api,
-		cmd:  cmd,
-		msg:  msg,
-		chat: msg.Chat.ID,
+type contextBase struct {
+	bot       *Bot
+	Chat      Chat
+	getCaller func() string
+}
+
+func (c *contextBase) caller() string {
+	if c.getCaller != nil {
+		return c.getCaller()
 	}
+	return "unknown"
+}
+
+func (c *contextBase) getBot() *Bot {
+	return c.bot
+}
+
+// Close stops handler execution.
+func (c *contextBase) Close() {
+	c.bot.closeExecution()
+}
+
+// Logger returns command logger.
+func (c *contextBase) Logger() *logger.Logger {
+	return c.bot.log.Child(c.caller())
+}
+
+// OpenChat makes chat interface.
+func (c *contextBase) OpenChat(chatID int64) Chat {
+	return c.OpenChatUsername(strconv.FormatInt(chatID, 10))
+}
+
+// OpenChatUsername makes chat interface by username.
+func (c *contextBase) OpenChatUsername(username string) Chat {
+	return Chat{
+		ctx:    c,
+		chatID: username,
+	}
+}
+
+// GetMe returns basic information about the bot.
+func (c *contextBase) GetMe() tg.User {
+	return *c.bot.Me
+}
+
+// GetUserPhotos returns a list of profile pictures for a user.
+func (c *contextBase) GetUserPhotos(userID int64) *tg.UserProfilePhotos {
+	p := params{}.set("user_id", userID)
+	return api[*tg.UserProfilePhotos](c, "getUserProfilePhotos", p)
+}
+
+// GetFile returns basic information about a file
+// and prepares it for downloading.
+func (c *contextBase) GetFile(fileID string) *tg.File {
+	p := params{}.set("file_id", fileID)
+	return api[*tg.File](c, "getFile", p)
+}
+
+// DownloadReader downloads file as io.ReadCloser from Telegram servers.
+func (c *contextBase) DownloadReader(f *tg.File) (io.ReadCloser, error) {
+	return c.bot.downloadFile(f.FilePath)
+}
+
+// Download downloads file from Telegram servers.
+func (c *contextBase) Download(f *tg.File) ([]byte, error) {
+	rc, err := c.bot.downloadFile(f.FilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+	return io.ReadAll(rc)
+}
+
+// DownloadReaderFile downloads file as io.ReadCloser from Telegram servers
+// by file id.
+func (c *contextBase) DownloadReaderFile(fid string) (io.ReadCloser, error) {
+	return c.DownloadReader(c.GetFile(fid))
+}
+
+// DownloadFile downloads file from Telegram servers by file id.
+func (c *contextBase) DownloadFile(fid string) ([]byte, error) {
+	return c.Download(c.GetFile(fid))
+}
+
+type commonContext interface {
+	getBot() *Bot
+	caller() string
+	Close()
+}
+
+func api[T any](c commonContext, method string, p params, files ...File) T {
+	bot := c.getBot()
+	var result T
+	var err error
+	if len(files) > 0 {
+		result, err = uploadFiles[T](bot, method, p, files)
+	} else {
+		result, err = performRequest[T](bot, method, p)
+	}
+	switch err.(type) {
+	case nil:
+		return result
+	case *tg.APIError:
+		bot.log.Warn("from '%s'\n%s", c.caller(), err.Error())
+		c.Close()
+		return result
+	}
+
+	switch err {
+	case context.Canceled, context.DeadlineExceeded:
+	default:
+		bot.log.Error(err.Error())
+	}
+	c.Close()
+	return result
+}
+
+func (b *Bot) makeContext(cmd *Command, msg *tg.Message) *Context {
+	c := Context{
+		contextBase: contextBase{
+			bot: b,
+		},
+		cmd: cmd,
+		msg: msg,
+	}
+	c.getCaller = c.caller
+	c.Chat = c.OpenChat(msg.Chat.ID)
+	return &c
 }
 
 // Context type.
 type Context struct {
-	api  *tgbotapi.BotAPI
-	cmd  *Command
-	msg  *tgbotapi.Message
-	chat int64
+	contextBase
+	cmd *Command
+	msg *tg.Message
 }
 
-func (c *Context) err(e error) {
-	if e == nil {
-		return
-	}
-	log.Println("telegram: ", e.Error())
-	//TODO
-	c.Close()
+func (c *Context) caller() string {
+	return c.cmd.Cmd
 }
 
-// Close stops command execution.
-func (c *Context) Close() {
-	runtime.Goexit()
-}
-
-// OpenChat makes chat interface.
-func (c *Context) OpenChat(chatID int64) *Chat {
-	return &Chat{
-		ctx:    c,
-		chatID: chatID,
-	}
-}
-
-// OpenChatUsername makes chat interface by username intead of id.
-func (c *Context) OpenChatUsername(username string) *Chat {
-	return &Chat{
-		ctx:      c,
-		username: username,
-	}
-}
-
-// Chat makes current chat interface.
-func (c *Context) Chat() *Chat {
-	return c.OpenChat(c.chat)
-}
-
-func (c *Context) Download(fileID string, out io.Writer) []byte {
-	url, err := c.api.GetFileDirectURL(fileID)
-	c.err(err)
-	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	resp, err := c.api.Client.Do(req)
-	c.err(err)
-	defer resp.Body.Close()
-	if out == nil {
-		b, err := io.ReadAll(resp.Body)
-		c.err(err)
-		return b
-	}
-	_, err = io.Copy(out, resp.Body)
-	c.err(err)
-	return nil
-}
-
-func (c *Context) GetMe() tgbotapi.User {
-	return c.api.Self
-}
-
-func (c *Context) GetUserPhotos(userID int64) tgbotapi.UserProfilePhotos {
-	p, err := c.api.GetUserProfilePhotos(tgbotapi.NewUserProfilePhotos(userID))
-	c.err(err)
-	return p
-}
-
-func (c *Context) MessageClose(msg MessageConfig) {
-	c.Chat().Send(msg)
-	c.Close()
-}
-
-func (c *Context) TextClose(text string) {
-	c.Chat().Send(MessageConfig{MsgText: MsgText{Text: text}})
-	c.Close()
-}
-
-func (c *Context) ReplyText(text string, ents ...tgbotapi.MessageEntity) {
-	c.Chat().Send(MessageConfig{
-		MsgText: MsgText{
-			Text:     text,
-			Entities: ents,
+// Reply sends message to the current chat and closes context.
+func (c *Context) Reply(text string, entities ...tg.MessageEntity) {
+	c.Chat.Send(Message{
+		Text:     text,
+		Entities: entities,
+		SendOptions: SendOptions{
+			ReplyTo: c.msg.ID,
 		},
-		ReplyToMessageID: c.msg.MessageID,
 	})
-	c.Close()
-}
-
-func (c *Context) ReplyHelp() {
-	m, e := generateHelp(c.cmd)
-	c.ReplyText(m, e)
 	c.Close()
 }

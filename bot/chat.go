@@ -1,104 +1,83 @@
 package bot
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import "tghwbot/bot/tg"
 
+// Chat represents chat api.
 type Chat struct {
-	ctx      *Context
-	chatID   int64
-	username string
+	ctx    commonContext
+	chatID string
 }
 
-type MsgText struct {
-	Text      string
-	Entities  []tgbotapi.MessageEntity
-	ParseMode string
-}
-
-type MessageConfig struct {
-	MsgText
-	DisableWebPagePreview    bool
-	ReplyToMessageID         int
-	ReplyMarkup              interface{}
-	DisableNotification      bool
-	AllowSendingWithoutReply bool
-}
-
-func (c *Chat) Send(msg MessageConfig) tgbotapi.Message {
-	m, err := c.ctx.api.Send(tgbotapi.MessageConfig{
-		Text:                  msg.Text,
-		Entities:              msg.Entities,
-		ParseMode:             msg.ParseMode,
-		DisableWebPagePreview: msg.DisableWebPagePreview,
-		BaseChat: tgbotapi.BaseChat{
-			ChatID:                   c.chatID,
-			ChannelUsername:          c.username,
-			ReplyToMessageID:         msg.ReplyToMessageID,
-			ReplyMarkup:              msg.ReplyMarkup,
-			DisableNotification:      msg.DisableNotification,
-			AllowSendingWithoutReply: msg.AllowSendingWithoutReply,
-		},
+// GetInfo returns up to date information about the chat.
+func (c *Chat) GetInfo() *tg.Chat {
+	return api[*tg.Chat](c.ctx, "getChat", params{
+		"chat_id": {c.chatID},
 	})
-	c.ctx.err(err)
-	return m
 }
 
-func (c *Chat) Edit(msgID int, text string) tgbotapi.Message {
-	m, err := c.ctx.api.Send(tgbotapi.NewEditMessageText(c.chatID, msgID, text))
-	c.ctx.err(err)
-	return m
-}
-
-func NewPhoto(caption string, file tgbotapi.RequestFileData) PhotoConfig {
-	return PhotoConfig{
-		MsgText: MsgText{
-			Text: caption,
-		},
-		File: file,
-	}
-}
-
-type PhotoConfig struct {
-	MsgText
-	ReplyToMessageID         int
-	ReplyMarkup              interface{}
-	DisableNotification      bool
-	AllowSendingWithoutReply bool
-	File                     tgbotapi.RequestFileData
-}
-
-func (c *Chat) SendPhoto(msg PhotoConfig) tgbotapi.Message {
-	m, err := c.ctx.api.Send(tgbotapi.PhotoConfig{
-		BaseFile: tgbotapi.BaseFile{
-			BaseChat: tgbotapi.BaseChat{
-				ChatID:                   c.chatID,
-				ChannelUsername:          c.username,
-				ReplyToMessageID:         msg.ReplyToMessageID,
-				ReplyMarkup:              msg.ReplyMarkup,
-				DisableNotification:      msg.DisableNotification,
-				AllowSendingWithoutReply: msg.AllowSendingWithoutReply,
-			},
-			File: msg.File,
-		},
-		Caption:         msg.Text,
-		CaptionEntities: msg.Entities,
-		ParseMode:       msg.ParseMode,
+// MemberCount returns the number of members in a chat.
+func (c *Chat) MemberCount() int {
+	return api[int](c.ctx, "getChatMemberCount", params{
+		"chat_id": {c.chatID},
 	})
-	c.ctx.err(err)
-	return m
 }
 
-type PhotoGroupConfig struct {
-	Photos              []tgbotapi.RequestFileData
-	DisableNotification bool
-	ReplyToMessageID    int
+// Leave a group, supergroup or channel.
+func (c *Chat) Leave() {
+	api[bool](c.ctx, "leaveChat", params{
+		"chat_id": {c.chatID},
+	})
 }
 
-func (c *Chat) SendPhotoGroup(pg PhotoGroupConfig) []tgbotapi.Message {
-	mgc := tgbotapi.NewMediaGroup(c.chatID, make([]interface{}, 0, len(pg.Photos)))
-	for i := range pg.Photos {
-		mgc.Media = append(mgc.Media, tgbotapi.NewInputMediaPhoto(pg.Photos[i]))
+// Forward forwards messages of any kind.
+// Service messages can't be forwarded.
+func (c *Chat) Forward(from *Chat, msgID int) *tg.Message {
+	p := params{}.set("chat_id", c.chatID)
+	p.set("from_chat_id", from.chatID)
+	p.set("message_id", msgID)
+	p.set("disable_notification", false)
+	p.set("protect_content", false)
+	return api[*tg.Message](c.ctx, "forwardMessage", p)
+}
+
+// ForwardTo forwards message to specified chat instead of current.
+func (c *Chat) ForwardTo(to *Chat, msgID int) *tg.Message {
+	return to.Forward(c, msgID)
+}
+
+// SendText sends just a text.
+func (c *Chat) SendText(text string) *tg.Message {
+	return c.Send(NewMessage(text))
+}
+
+// Send sends any Sendable object.
+func (c *Chat) Send(s Sendable) *tg.Message {
+	if s == nil {
+		return nil
 	}
-	m, err := c.ctx.api.SendMediaGroup(mgc)
-	c.ctx.err(err)
-	return m
+
+	m := "send" + s.what()
+	p := s.params().set("chat_id", c.chatID)
+	if f, ok := s.(Fileable); ok {
+		files := f.files()
+		for i := range files {
+			if files[i].Data() == "" {
+				return api[*tg.Message](c.ctx, m, p, files...)
+			}
+		}
+		for i := range files {
+			p.set(files[i].Field, files[i].Data())
+		}
+	}
+
+	return api[*tg.Message](c.ctx, m, p)
+}
+
+// SendChatAction sends chat action to tell the user that something
+// is happening on the bot's side.
+func (c *Chat) SendChatAction(act tg.ChatAction) {
+	p := params{}
+	p.set("chat_id", c.chatID)
+	p.set("action", string(act))
+	api[bool](c.ctx, "sendChatAction", p)
 }
