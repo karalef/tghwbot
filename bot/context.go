@@ -2,19 +2,19 @@ package bot
 
 import (
 	"context"
-	"runtime"
 	"strconv"
 	"tghwbot/bot/logger"
 	"tghwbot/bot/tg"
 )
 
 func (b *Bot) makeContext(cmd *Command, msg *tg.Message) *Context {
-	return &Context{
-		bot:  b,
-		cmd:  cmd,
-		msg:  msg,
-		chat: msg.Chat.ID,
+	c := Context{
+		bot: b,
+		cmd: cmd,
+		msg: msg,
 	}
+	c.Chat = c.OpenChat(msg.Chat.ID)
+	return &c
 }
 
 // Context type.
@@ -22,41 +22,52 @@ type Context struct {
 	bot  *Bot
 	cmd  *Command
 	msg  *tg.Message
-	chat int64
+	Chat Chat
 }
 
-func (c *Context) err(e error) {
-	if e == nil {
-		return
+func (c *Context) getBot() *Bot {
+	return c.bot
+}
+
+func (c *Context) caller() string {
+	return c.cmd.Cmd
+}
+
+type commonContext interface {
+	getBot() *Bot
+	caller() string
+}
+
+func api[T any](c commonContext, method string, p params, files ...File) T {
+	bot := c.getBot()
+	var result T
+	var err error
+	if len(files) > 0 {
+		result, err = uploadFiles[T](bot, method, p, files)
+	} else {
+		result, err = performRequest[T](bot, method, p)
 	}
-	println(e.Error())
-	//TODO
-	c.Close()
-}
-
-func api[T any](c *Context, method string, p params) T {
-	result, err := performRequest[T](c.bot, method, p)
 	switch err.(type) {
 	case nil:
 		return result
 	case *tg.APIError:
-		c.bot.log.Warn("from '%s'\n%s", c.cmd.Cmd, err.Error())
-		c.Close()
+		bot.log.Warn("from '%s'\n%s", c.caller(), err.Error())
+		bot.closeExecution()
 		return result
 	}
 
 	switch err {
 	case context.Canceled, context.DeadlineExceeded:
 	default:
-		c.bot.log.Error(err.Error())
+		bot.log.Error(err.Error())
 	}
-	c.Close()
+	bot.closeExecution()
 	return result
 }
 
 // Close stops command execution.
 func (c *Context) Close() {
-	runtime.Goexit()
+	c.bot.closeExecution()
 }
 
 // Logger returns command logger.
@@ -65,21 +76,28 @@ func (c *Context) Logger() *logger.Logger {
 }
 
 // OpenChat makes chat interface.
-func (c *Context) OpenChat(chatID int64) *Chat {
+func (c *Context) OpenChat(chatID int64) Chat {
 	return c.OpenChatUsername(strconv.FormatInt(chatID, 10))
 }
 
 // OpenChatUsername makes chat interface by username.
-func (c *Context) OpenChatUsername(username string) *Chat {
-	return &Chat{
+func (c *Context) OpenChatUsername(username string) Chat {
+	return Chat{
 		ctx:    c,
 		chatID: username,
 	}
 }
 
-// Chat makes current chat interface.
-func (c *Context) Chat() *Chat {
-	return c.OpenChat(c.chat)
+// Reply sends message to the current chat and closes context.
+func (c *Context) Reply(text string, entities ...tg.MessageEntity) {
+	c.Chat.Send(Message{
+		Text:     text,
+		Entities: entities,
+		SendOptions: SendOptions{
+			ReplyTo: c.msg.ID,
+		},
+	})
+	c.Close()
 }
 
 // GetMe returns basic information about the bot.

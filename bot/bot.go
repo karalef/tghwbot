@@ -2,7 +2,9 @@ package bot
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"runtime"
 	"strings"
 	"tghwbot/bot/logger"
 	"tghwbot/bot/tg"
@@ -10,6 +12,9 @@ import (
 
 // New creates new bot.
 func New(token string, log *logger.Logger, cmds ...*Command) (*Bot, error) {
+	if token == "" {
+		return nil, errors.New("no token provided")
+	}
 	if log == nil {
 		log = logger.New(logger.DefaultWriter, "")
 	}
@@ -19,6 +24,7 @@ func New(token string, log *logger.Logger, cmds ...*Command) (*Bot, error) {
 		fileURL: tg.DefaultFileURL,
 		client:  &http.Client{},
 		log:     log,
+		cmds:    cmds,
 	}
 
 	me, err := b.getMe()
@@ -27,7 +33,6 @@ func New(token string, log *logger.Logger, cmds ...*Command) (*Bot, error) {
 	}
 	b.Me = me
 
-	b.cmds = append(cmds, &ping, makeHelp(&b))
 	return &b, nil
 }
 
@@ -43,6 +48,10 @@ type Bot struct {
 	cmds []*Command
 
 	Me *tg.User
+}
+
+func (b *Bot) closeExecution() {
+	runtime.Goexit()
 }
 
 func (b *Bot) setupCommands() error {
