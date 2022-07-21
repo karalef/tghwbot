@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"io"
 	"strconv"
 	"tghwbot/bot/logger"
 	"tghwbot/bot/tg"
@@ -65,9 +66,30 @@ func (c *contextBase) GetFile(fileID string) *tg.File {
 	return api[*tg.File](c, "getFile", p)
 }
 
+// DownloadReader downloads file as io.ReadCloser from Telegram servers.
+func (c *contextBase) DownloadReader(f *tg.File) (io.ReadCloser, error) {
+	return c.bot.downloadFile(f.FilePath)
+}
+
 // Download downloads file from Telegram servers.
 func (c *contextBase) Download(f *tg.File) ([]byte, error) {
-	return c.bot.downloadFile(f.FilePath)
+	rc, err := c.bot.downloadFile(f.FilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+	return io.ReadAll(rc)
+}
+
+// DownloadReaderFile downloads file as io.ReadCloser from Telegram servers
+// by file id.
+func (c *contextBase) DownloadReaderFile(fid string) (io.ReadCloser, error) {
+	return c.DownloadReader(c.GetFile(fid))
+}
+
+// DownloadFile downloads file from Telegram servers by file id.
+func (c *contextBase) DownloadFile(fid string) ([]byte, error) {
+	return c.Download(c.GetFile(fid))
 }
 
 type commonContext interface {

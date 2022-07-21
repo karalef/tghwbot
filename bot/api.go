@@ -161,13 +161,12 @@ func uploadFiles[T any](b *Bot, method string, p params, files []File) (T, error
 	return decodeResponse[T](method, resp, err)
 }
 
-func (b *Bot) downloadFile(path string) ([]byte, error) {
+func (b *Bot) downloadFile(path string) (io.ReadCloser, error) {
 	resp, err := b.client.Get(b.fileURL + b.token + "/" + path)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	return io.ReadAll(resp.Body)
+	return resp.Body, nil
 }
 
 func (b *Bot) getMe() (*tg.User, error) {
