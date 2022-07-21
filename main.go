@@ -30,6 +30,7 @@ func main() {
 			&random.When,
 			&text.Gen,
 			&images.CitgenCmd,
+			&images.Search,
 		},
 	})
 	if err != nil {

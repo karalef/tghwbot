@@ -45,6 +45,11 @@ func (c *Chat) ForwardTo(to *Chat, msgID int) *tg.Message {
 	return to.Forward(c, msgID)
 }
 
+// SendText sends just a text.
+func (c *Chat) SendText(text string) *tg.Message {
+	return c.Send(NewMessage(text))
+}
+
 // Send sends any Sendable object.
 func (c *Chat) Send(s Sendable) *tg.Message {
 	if s == nil {

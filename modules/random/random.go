@@ -12,11 +12,14 @@ import (
 
 var myRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-func randInt(max int) int {
+// RandInt returns random int in range 0-max.
+func RandInt(max int) int {
 	return myRand.Intn(max)
 }
 
-func randP(max int, power float64) int {
+// RandP returns random int in range 0-max with probability
+// controlled by power.
+func RandP(max int, power float64) int {
 	r := myRand.Float64()
 	return int(math.Floor(float64(max+1) * math.Pow(r, power)))
 }
@@ -80,7 +83,7 @@ var When = bot.Command{
 		if len(args) == 0 {
 			ctx.Reply("Укажите событие")
 		}
-		t := time.Now().AddDate(randP(51, 1.5), randInt(12), randInt(31))
+		t := time.Now().AddDate(RandP(51, 1.5), RandInt(12), RandInt(31))
 		e := strings.Join(args, " ")
 		ctx.Reply(e + " " + t.Format("02 Jan 2006"))
 	},
