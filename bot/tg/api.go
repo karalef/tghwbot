@@ -40,7 +40,7 @@ type Update struct {
 	EditedChannelPost *Message `json:"edited_channel_post"`
 	//CallbackQuery     *CallbackQuery `json:"callback_query"`
 	InlineQuery  *InlineQuery  `json:"inline_query"`
-	InlineResult *InlineResult `json:"chosen_inline_result"`
+	InlineChosen *InlineChosen `json:"chosen_inline_result"`
 	//ShippingQuery     *ShippingQuery `json:"shipping_query"`
 	//PreCheckoutQuery  *PreCheckoutQuery `json:"pre_checkout_query"`
 	Poll       *Poll       `json:"poll"`
@@ -50,30 +50,29 @@ type Update struct {
 	//ChatJoinRequest *ChatJoinRequest  `json:"chat_join_request"`
 }
 
-// InlineQuery is an incoming inline query. When the user sends
-// an empty query, your bot could return some default or
-// trending results.
-type InlineQuery struct {
-	ID       string    `json:"id"`
-	From     *User     `json:"from"`
-	Query    string    `json:"query"` // up to 256 characters
-	Offset   string    `json:"offset"`
-	ChatType string    `json:"chat_type"`
-	Location *Location `json:"location"`
-}
-
-// InlineResult represents a result of an inline query that was chosen
-// by the user and sent to their chat partner.
-type InlineResult struct {
-	ResultID        string    `json:"result_id"`
-	From            *User     `json:"from"`
-	Location        *Location `json:"location"`
-	InlineMessageID string    `json:"inline_message_id"`
-	Query           string    `json:"query"`
-}
-
 // Command represents a bot command.
 type Command struct {
 	Command     string `json:"command"`
 	Description string `json:"description"`
+}
+
+// CommandScopeType represents scope type.
+type CommandScopeType string
+
+// all available command scope types.
+const (
+	ScopeTypeDefault         = CommandScopeType("default")
+	ScopeTypeAllPrivateChats = CommandScopeType("all_private_chats")
+	ScopeTypeAllGroupChats   = CommandScopeType("all_group_chats")
+	ScopeTypeAllChatAdmins   = CommandScopeType("all_chat_administrators")
+	ScopeTypeChat            = CommandScopeType("chat")
+	ScopeTypeChatAdmins      = CommandScopeType("chat_administrators")
+	ScopeTypeChatMember      = CommandScopeType("chat_member")
+)
+
+// CommandScope represents the scope to which bot commands are applied.
+type CommandScope struct {
+	Type   CommandScopeType `json:"type"`
+	ChatID int64            `json:"chat_id,omitempty"`
+	UserID int64            `json:"user_id,omitempty"`
 }

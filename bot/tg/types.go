@@ -71,10 +71,10 @@ type Poll struct {
 type Location struct {
 	Long               float32  `json:"longitude"`
 	Lat                float32  `json:"latitude"`
-	HorizontalAccuracy *float32 `json:"horizontal_accuracy"`
-	LivePeriod         int      `json:"live_period"`
-	Heading            int      `json:"heading"`
-	AlertRadius        int      `json:"proximity_alert_radius"`
+	HorizontalAccuracy *float32 `json:"horizontal_accuracy,omitempty"`
+	LivePeriod         int      `json:"live_period,omitempty"`
+	Heading            int      `json:"heading,omitempty"`
+	AlertRadius        int      `json:"proximity_alert_radius,omitempty"`
 }
 
 // Venue represents a venue.
@@ -86,4 +86,23 @@ type Venue struct {
 	FoursquareType  string   `json:"foursquare_type"`
 	GooglePlaceID   string   `json:"google_place_id"`
 	GooglePlaceType string   `json:"google_place_type"`
+}
+
+// StickerSet represents a sticker set.
+type StickerSet struct {
+	Name          string     `json:"name"`
+	Title         string     `json:"title"`
+	IsAnimated    bool       `json:"is_animated"`
+	IsVideo       bool       `json:"is_video"`
+	ContainsMasks bool       `json:"contains_masks"`
+	Stickers      []Sticker  `json:"stickers"`
+	Thumbnail     *PhotoSize `json:"thumb"`
+}
+
+// MaskPosition describes the position on faces where a mask should be placed by default.
+type MaskPosition struct {
+	Point  string  `json:"point"`
+	XShift float64 `json:"x_shift"`
+	YShift float64 `json:"y_shift"`
+	Scale  float64 `json:"scale"`
 }

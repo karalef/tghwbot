@@ -80,6 +80,21 @@ type Voice struct {
 	MimeType string `json:"mime_type"`
 }
 
+// Sticker represents a sticker.
+type Sticker struct {
+	FileData
+
+	Width        int          `json:"width"`
+	Height       int          `json:"height"`
+	IsAnimated   bool         `json:"is_animated"`
+	IsVideo      bool         `json:"is_video"`
+	Thumbnail    *PhotoSize   `json:"thumb"`
+	Emoji        string       `json:"emoji"`
+	SetName      string       `json:"set_name"`
+	Premium      *File        `json:"premium_animation"`
+	MaskPosition MaskPosition `json:"mask_position"`
+}
+
 // File object represents a file ready to be downloaded.
 type File struct {
 	FileData

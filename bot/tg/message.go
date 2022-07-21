@@ -1,6 +1,8 @@
 package tg
 
-import "time"
+import (
+	"time"
+)
 
 // Message represents a message.
 type Message struct {
@@ -28,14 +30,14 @@ type Message struct {
 	Audio               *Audio          `json:"audio"`
 	Document            *Document       `json:"document"`
 	Photo               []PhotoSize     `json:"photo"`
-	// Sticker *Sticker `json:"sticker"`
-	Video           *Video          `json:"video"`
-	VideoNote       *VideoNote      `json:"video_note"`
-	Voice           *Voice          `json:"voice"`
-	Caption         string          `json:"caption"`
-	CaptionEntities []MessageEntity `json:"caption_entities"`
-	Contact         *Contact        `json:"contact"`
-	Dice            *Dice           `json:"dice"`
+	Sticker             *Sticker        `json:"sticker"`
+	Video               *Video          `json:"video"`
+	VideoNote           *VideoNote      `json:"video_note"`
+	Voice               *Voice          `json:"voice"`
+	Caption             string          `json:"caption"`
+	CaptionEntities     []MessageEntity `json:"caption_entities"`
+	Contact             *Contact        `json:"contact"`
+	Dice                *Dice           `json:"dice"`
 	// Game *Game `json:"game"`
 	Poll              *Poll       `json:"poll"`
 	Venue             *Venue      `json:"venue"`
@@ -60,8 +62,8 @@ type Message struct {
 	// VideoChatStarted *VideoChatStarted `json:"video_chat_started"``
 	// VideoChatEnded *VideoChatEnded `json:"video_chat_ended"`
 	// VideoChatInvited *VideoChatInvited `json:"video_chat_participants_invited"``
-	// WebAppData *WebAppData `json:"web_app_data"`
-	// ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup"`
+	WebAppData  *WebAppData           `json:"web_app_data"`
+	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup"`
 }
 
 // Time converts unixtime to time.Time.
@@ -111,3 +113,13 @@ type ProximityAlert struct {
 	Watcher  *User `json:"watcher"`
 	Distance int   `json:"distance"`
 }
+
+// ParseMode type.
+type ParseMode string
+
+// all available parse modes.
+const (
+	Markdown   ParseMode = "Markdown"
+	MarkdownV2 ParseMode = "MarkdownV2"
+	HTML       ParseMode = "HTML"
+)

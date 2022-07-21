@@ -13,11 +13,14 @@ type Chat struct {
 	Photo               *ChatPhoto       `json:"photo"`
 	Bio                 string           `json:"bio"`
 	HasPrivateForwards  bool             `json:"has_private_forwards"`
+	JoinToSend          bool             `json:"join_to_send_messages"`
+	JoinByRequest       bool             `json:"join_by_request"`
 	Description         string           `json:"description"`
 	InviteLink          string           `json:"invite_link"`
 	PinnedMessage       *Message         `json:"pinned_message"`
 	Permissions         *ChatPermissions `json:"permissions"`
 	SlowModeDelay       int              `json:"slow_mode_delay"`
+	AutoDeleteTime      int              `json:"message_auto_delete_time"`
 	HasProtectedContent bool             `json:"has_protected_content"`
 	StickerSetNme       string           `json:"sticker_set_name"`
 	CanSetStickerSet    bool             `json:"can_set_sticker_set"`
@@ -55,10 +58,29 @@ type ChatType string
 
 // all available chat types.
 const (
+	ChatSender     ChatType = "sender"
 	ChatPrivate    ChatType = "private"
 	ChatGroup      ChatType = "group"
 	ChatSuperGroup ChatType = "supergroup"
 	ChatChannel    ChatType = "channel"
+)
+
+// ChatAction represents one the possible chat actions.
+type ChatAction string
+
+// all available chat actions.
+const (
+	ActionTyping          ChatAction = "typing"
+	ActionUploadPhoto     ChatAction = "upload_photo"
+	ActionRecordVideo     ChatAction = "record_video"
+	ActionUploadVideo     ChatAction = "upload_video"
+	ActionRecordVoice     ChatAction = "record_voice"
+	ActionUploadVoice     ChatAction = "upload_voice"
+	ActionUploadDocument  ChatAction = "upload_document"
+	ActionChooseStocker   ChatAction = "choose_sticker"
+	ActionFindLocation    ChatAction = "find_location"
+	ActionRecordVideoNote ChatAction = "record_video_note"
+	ActionUploadVideoNote ChatAction = "upload_video_note"
 )
 
 // ChatPhoto represents a chat photo.
