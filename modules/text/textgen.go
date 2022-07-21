@@ -2,9 +2,12 @@ package text
 
 import (
 	"strings"
+	"sync"
 	"tghwbot/bot"
 	"tghwbot/bot/tg"
 )
+
+var textgenMut sync.Mutex
 
 var Gen = bot.Command{
 	Cmd:         "textgen",
@@ -12,8 +15,12 @@ var Gen = bot.Command{
 	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		query := strings.Join(args, " ")
 		if query == "" {
-			ctx.Reply("Придумайте начало истории")
+			ctx.Reply("Think of the beginning of the story")
 		}
+
+		textgenMut.Lock()
+		defer textgenMut.Unlock()
+		ctx.Chat.Send(bot.ChatAction(tg.ActionTyping))
 		replies, err := porfirevich(query, 30)
 		if err != nil {
 			ctx.Logger().Error(err.Error())

@@ -5,7 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 )
+
+var porfirevichClient = &http.Client{
+	Timeout: time.Second * 10,
+}
 
 func porfirevich(start string, length int) ([]string, error) {
 	params := map[string]interface{}{
@@ -13,7 +18,7 @@ func porfirevich(start string, length int) ([]string, error) {
 		"prompt": start,
 	}
 	body, _ := json.Marshal(params)
-	resp, err := http.Post("https://pelevin.gpt.dobro.ai/generate/", "application/json", bytes.NewReader(body))
+	resp, err := porfirevichClient.Post("https://pelevin.gpt.dobro.ai/generate/", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}

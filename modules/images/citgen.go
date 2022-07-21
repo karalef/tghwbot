@@ -33,6 +33,7 @@ var CitgenCmd = bot.Command{
 		if text == "" {
 			ctx.Reply("Сообщение не содержит текста")
 		}
+		ctx.Chat.Send(bot.ChatAction(tg.ActionUploadPhoto))
 
 		log := ctx.Logger()
 		photo, err := getPhoto(ctx, from.ID, 200)
