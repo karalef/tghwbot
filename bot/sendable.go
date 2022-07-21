@@ -14,14 +14,14 @@ type Fileable interface {
 	files() []File
 }
 
-// Caption represents caption with entities and parse mode.
-type Caption struct {
+// CaptionData represents caption with entities and parse mode.
+type CaptionData struct {
 	Caption   string
 	ParseMode tg.ParseMode
 	Entities  []tg.MessageEntity
 }
 
-func (c *Caption) embed(p params) {
+func (c *CaptionData) embed(p params) {
 	p.set("caption", c.Caption)
 	p.set("parse_mode", string(c.ParseMode))
 	p.set("caption_entities", c.Entities)
@@ -99,7 +99,7 @@ func NewPhoto(photo *tg.InputFile) *Photo {
 // Photo contains information about the photo to be sent.
 type Photo struct {
 	Photo *tg.InputFile
-	Caption
+	CaptionData
 	SendOptions
 }
 
@@ -109,7 +109,7 @@ func (Photo) what() string {
 
 func (ph Photo) params() params {
 	p := params{}
-	ph.Caption.embed(p)
+	ph.CaptionData.embed(p)
 	ph.SendOptions.embed(p)
 	return p
 }
@@ -128,7 +128,7 @@ func NewAudio(audio *tg.InputFile) *Audio {
 // Audio contains information about the audio to be sent.
 type Audio struct {
 	BaseFile
-	Caption
+	CaptionData
 	Duration  int
 	Performer string
 	Title     string
@@ -141,7 +141,7 @@ func (Audio) what() string {
 
 func (a Audio) params() params {
 	p := params{}
-	a.Caption.embed(p)
+	a.CaptionData.embed(p)
 	p.set("duration", a.Duration)
 	p.set("performer", a.Performer)
 	p.set("title", a.Title)
@@ -163,7 +163,7 @@ func NewDocument(document *tg.InputFile) *Document {
 // Document contains information about the document to be sent.
 type Document struct {
 	BaseFile
-	Caption
+	CaptionData
 	DisableTypeDetection bool
 	SendOptions
 }
@@ -174,7 +174,7 @@ func (Document) what() string {
 
 func (d Document) params() params {
 	p := params{}
-	d.Caption.embed(p)
+	d.CaptionData.embed(p)
 	p.set("disable_content_type_detection", d.DisableTypeDetection)
 	d.SendOptions.embed(p)
 	return p
@@ -194,7 +194,7 @@ func NewVideo(video *tg.InputFile) *Video {
 // Video contains information about the video to be sent.
 type Video struct {
 	BaseFile
-	Caption
+	CaptionData
 	Duration          int
 	Width             int
 	Height            int
@@ -211,7 +211,7 @@ func (v Video) params() params {
 	p.set("duration", v.Duration)
 	p.set("width", v.Width)
 	p.set("height", v.Height)
-	v.Caption.embed(p)
+	v.CaptionData.embed(p)
 	p.set("supports_streaming", v.SupportsStreaming)
 	v.SendOptions.embed(p)
 	return p
@@ -231,7 +231,7 @@ func NewAnimation(animation *tg.InputFile) *Video {
 // Animation contains information about the animation to be sent.
 type Animation struct {
 	BaseFile
-	Caption
+	CaptionData
 	Duration int
 	Width    int
 	Height   int
@@ -247,7 +247,7 @@ func (a Animation) params() params {
 	p.set("duration", a.Duration)
 	p.set("width", a.Width)
 	p.set("height", a.Height)
-	a.Caption.embed(p)
+	a.CaptionData.embed(p)
 	a.SendOptions.embed(p)
 	return p
 }
@@ -266,7 +266,7 @@ func NewVoice(voice *tg.InputFile) *Voice {
 // Voice contains information about the voice to be sent.
 type Voice struct {
 	Voice *tg.InputFile
-	Caption
+	CaptionData
 	Duration int
 	SendOptions
 }
@@ -277,7 +277,7 @@ func (Voice) what() string {
 
 func (v Voice) params() params {
 	p := params{}
-	v.Caption.embed(p)
+	v.CaptionData.embed(p)
 	p.set("duration", v.Duration)
 	v.SendOptions.embed(p)
 	return p
