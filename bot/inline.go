@@ -5,14 +5,22 @@ import (
 	"tghwbot/bot/tg"
 )
 
-// InlineContext type.
-type InlineContext struct {
-	bot           *Bot
-	inlineQueryID string
+func (b *Bot) makeInlineContext(q *tg.InlineQuery) *InlineContext {
+	c := InlineContext{
+		contextBase: contextBase{
+			bot: b,
+		},
+		inlineQueryID: q.ID,
+	}
+	c.getCaller = c.caller
+	c.Chat = c.OpenChat(q.From.ID)
+	return &c
 }
 
-func (c *InlineContext) getBot() *Bot {
-	return c.bot
+// InlineContext type.
+type InlineContext struct {
+	contextBase
+	inlineQueryID string
 }
 
 func (c *InlineContext) caller() string {

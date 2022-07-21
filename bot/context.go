@@ -7,35 +7,73 @@ import (
 	"tghwbot/bot/tg"
 )
 
-func (b *Bot) makeContext(cmd *Command, msg *tg.Message) *Context {
-	c := Context{
-		bot: b,
-		cmd: cmd,
-		msg: msg,
+type contextBase struct {
+	bot       *Bot
+	Chat      Chat
+	getCaller func() string
+}
+
+func (c *contextBase) caller() string {
+	if c.getCaller != nil {
+		return c.getCaller()
 	}
-	c.Chat = c.OpenChat(msg.Chat.ID)
-	return &c
+	return "unknown"
 }
 
-// Context type.
-type Context struct {
-	bot  *Bot
-	cmd  *Command
-	msg  *tg.Message
-	Chat Chat
-}
-
-func (c *Context) getBot() *Bot {
+func (c *contextBase) getBot() *Bot {
 	return c.bot
 }
 
-func (c *Context) caller() string {
-	return c.cmd.Cmd
+// Close stops handler execution.
+func (c *contextBase) Close() {
+	c.bot.closeExecution()
+}
+
+// Logger returns command logger.
+func (c *contextBase) Logger() *logger.Logger {
+	return c.bot.log.Child(c.caller())
+}
+
+// OpenChat makes chat interface.
+func (c *contextBase) OpenChat(chatID int64) Chat {
+	return c.OpenChatUsername(strconv.FormatInt(chatID, 10))
+}
+
+// OpenChatUsername makes chat interface by username.
+func (c *contextBase) OpenChatUsername(username string) Chat {
+	return Chat{
+		ctx:    c,
+		chatID: username,
+	}
+}
+
+// GetMe returns basic information about the bot.
+func (c *contextBase) GetMe() tg.User {
+	return *c.bot.Me
+}
+
+// GetUserPhotos returns a list of profile pictures for a user.
+func (c *contextBase) GetUserPhotos(userID int64) *tg.UserProfilePhotos {
+	p := params{}.set("user_id", userID)
+	return api[*tg.UserProfilePhotos](c, "getUserProfilePhotos", p)
+}
+
+// GetFile returns basic information about a file
+// and prepares it for downloading.
+func (c *contextBase) GetFile(fileID string) *tg.File {
+	p := params{}.set("file_id", fileID)
+	return api[*tg.File](c, "getFile", p)
+}
+
+// Download downloads file from Telegram servers.
+func (c *contextBase) Download(f *tg.File) ([]byte, error) {
+	return c.bot.downloadFile(f.FilePath)
 }
 
 type commonContext interface {
 	getBot() *Bot
 	caller() string
+	Close()
 }
 
 func api[T any](c commonContext, method string, p params, files ...File) T {
@@ -52,7 +90,7 @@ func api[T any](c commonContext, method string, p params, files ...File) T {
 		return result
 	case *tg.APIError:
 		bot.log.Warn("from '%s'\n%s", c.caller(), err.Error())
-		bot.closeExecution()
+		c.Close()
 		return result
 	}
 
@@ -61,31 +99,32 @@ func api[T any](c commonContext, method string, p params, files ...File) T {
 	default:
 		bot.log.Error(err.Error())
 	}
-	bot.closeExecution()
+	c.Close()
 	return result
 }
 
-// Close stops command execution.
-func (c *Context) Close() {
-	c.bot.closeExecution()
-}
-
-// Logger returns command logger.
-func (c *Context) Logger() *logger.Logger {
-	return c.bot.log.Child(c.cmd.Cmd)
-}
-
-// OpenChat makes chat interface.
-func (c *Context) OpenChat(chatID int64) Chat {
-	return c.OpenChatUsername(strconv.FormatInt(chatID, 10))
-}
-
-// OpenChatUsername makes chat interface by username.
-func (c *Context) OpenChatUsername(username string) Chat {
-	return Chat{
-		ctx:    c,
-		chatID: username,
+func (b *Bot) makeContext(cmd *Command, msg *tg.Message) *Context {
+	c := Context{
+		contextBase: contextBase{
+			bot: b,
+		},
+		cmd: cmd,
+		msg: msg,
 	}
+	c.getCaller = c.caller
+	c.Chat = c.OpenChat(msg.Chat.ID)
+	return &c
+}
+
+// Context type.
+type Context struct {
+	contextBase
+	cmd *Command
+	msg *tg.Message
+}
+
+func (c *Context) caller() string {
+	return c.cmd.Cmd
 }
 
 // Reply sends message to the current chat and closes context.
@@ -98,22 +137,4 @@ func (c *Context) Reply(text string, entities ...tg.MessageEntity) {
 		},
 	})
 	c.Close()
-}
-
-// GetMe returns basic information about the bot.
-func (c *Context) GetMe() tg.User {
-	return *c.bot.Me
-}
-
-// GetUserPhotos returns a list of profile pictures for a user.
-func (c *Context) GetUserPhotos(userID int64) *tg.UserProfilePhotos {
-	p := params{}.set("user_id", userID)
-	return api[*tg.UserProfilePhotos](c, "getUserProfilePhotos", p)
-}
-
-// GetFile returns basic information about a file
-// and prepares it for downloading.
-func (c *Context) GetFile(fileID string) *tg.File {
-	p := params{}.set("file_id", fileID)
-	return api[*tg.File](c, "getFile", p)
 }

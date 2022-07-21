@@ -4,7 +4,7 @@ import "tghwbot/bot/tg"
 
 // Chat represents chat api.
 type Chat struct {
-	ctx    *Context
+	ctx    commonContext
 	chatID string
 }
 

@@ -48,6 +48,9 @@ type ReplyKeyboardRemove struct {
 	Selective bool `json:"selective,omitempty"`
 }
 
+// ForceReply represents an object, on receipt of which Telegram clients
+// will display a reply interface to the user (act as if the user has
+// selected the bot's message and tapped 'Reply').
 type ForceReply struct {
 	ForceReply  bool   `json:"force_reply"`
 	Placeholder string `json:"input_field_placeholder,omitempty"`
