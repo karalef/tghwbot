@@ -112,6 +112,7 @@ func performRequestContext[T any](ctx context.Context, b *Bot, method string, p 
 	return decodeResponse[T](method, resp, err)
 }
 
+// File contains field and file data.
 type File struct {
 	Field string
 	*tg.InputFile
