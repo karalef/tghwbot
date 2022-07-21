@@ -12,11 +12,12 @@ var Gen = bot.Command{
 	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		query := strings.Join(args, " ")
 		if query == "" {
-			ctx.ReplyClose("Придумайте начало истории")
+			ctx.Reply("Придумайте начало истории")
 		}
 		replies, err := porfirevich(query, 30)
 		if err != nil {
-			ctx.ReplyError(err)
+			ctx.Logger().Error(err.Error())
+			ctx.Reply(err.Error())
 		}
 
 		var text string
