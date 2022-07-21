@@ -10,6 +10,9 @@ import (
 // DefaultWriter var.
 var DefaultWriter = NewWriter(os.Stderr, false)
 
+// NullWriter is a Writer that does nothing on Write call.
+var NullWriter = NewWriter(io.Discard, false)
+
 // NewWriter makes new writer.
 func NewWriter(w io.Writer, useColor bool) *Writer {
 	return &Writer{
@@ -57,14 +60,13 @@ const timecol = magenta
 func (w *Writer) write() {
 	t := time.Now()
 	if t.Minute() != w.last.Minute() {
-		return
+		w.last = t
+		f := t.Format("02.01.2006 15:04\n")
+		if w.useColor {
+			f = timecol.wrap(f)
+		}
+		w.out.Write([]byte(f))
 	}
-	w.last = t
-	f := t.Format("02.01.2006 15:04\n")
-	if w.useColor {
-		f = timecol.wrap(f)
-	}
-	w.out.Write([]byte(f))
 
 	w.buf = append(w.buf, '\n')
 	w.out.Write(w.buf)
