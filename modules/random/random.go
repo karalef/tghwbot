@@ -26,15 +26,25 @@ var Number = bot.Command{
 	Description: "random number",
 	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		var max int64 = 100
+		var offset int64 = 0
 		if len(args) > 0 {
 			num := args[0]
 			var err error
+			if strings.IndexByte(num, '-') > 0 {
+				s := strings.SplitN(num, "-", 2)
+				offset, err = strconv.ParseInt(s[0], 10, 64)
+				if err != nil || offset < 0 {
+					ctx.Reply("Укажите числа от 1 до MaxInt64")
+				}
+				num = s[2]
+			}
 			max, err = strconv.ParseInt(num, 10, 64)
 			if err != nil || max <= 0 {
-				ctx.ReplyClose("Укажите число от 1 до MaxInt64")
+				ctx.Reply("Укажите число от 1 до MaxInt64")
 			}
 		}
-		ctx.Reply("Выпало число " + strconv.FormatInt(myRand.Int63n(max), 10))
+		max -= offset
+		ctx.Reply("Выпало число " + strconv.FormatInt(offset+myRand.Int63n(max), 10))
 	},
 }
 
@@ -55,7 +65,7 @@ var Info = bot.Command{
 	Description: "event probability",
 	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		if len(args) == 0 {
-			ctx.ReplyClose("Укажите событие")
+			ctx.Reply("Укажите событие")
 		}
 		p := myRand.Intn(101)
 		e := strings.Join(args, " ")
@@ -68,7 +78,7 @@ var When = bot.Command{
 	Description: "Когда произойдет событие",
 	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		if len(args) == 0 {
-			ctx.ReplyClose("Укажите событие")
+			ctx.Reply("Укажите событие")
 		}
 		t := time.Now().AddDate(randP(51, 1.5), randInt(12), randInt(31))
 		e := strings.Join(args, " ")

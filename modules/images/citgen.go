@@ -24,14 +24,14 @@ var CitgenCmd = bot.Command{
 	Description: "Генерация цитаты",
 	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		if msg.ReplyTo == nil {
-			ctx.ReplyClose("Ответьте на сообщение")
+			ctx.Reply("Ответьте на сообщение")
 		}
 		from := msg.ReplyTo.From
 		text := msg.ReplyTo.Text
 		date := msg.ReplyTo.Time()
 		caption := ""
 		if text == "" {
-			ctx.ReplyClose("Сообщение не содержит текста")
+			ctx.Reply("Сообщение не содержит текста")
 		}
 
 		log := ctx.Logger()
@@ -54,26 +54,31 @@ var CitgenCmd = bot.Command{
 		data, err := config.GeneratePNGReader(photo, user, text, date, from.ID == msg.From.ID)
 		if err != nil {
 			log.Error("citgen generate: %s", err.Error())
-			ctx.ReplyClose(err.Error())
+			ctx.Reply(err.Error())
 		}
-		ctx.Chat().SendPhoto(bot.NewPhoto(data, caption), nil)
+		p := bot.NewPhoto(tg.FileReader("citgen.png", data))
+		p.Caption = caption
+		ctx.Chat.Send(p)
 	},
 }
 
 func getPhoto(ctx *bot.Context, from int64, minSize int) (image.Image, error) {
 	ph := ctx.GetUserPhotos(from)
-	if len(ph) == 0 {
+	if ph.TotalCount == 0 {
 		return nil, nil
 	}
 
 	var fid string
-	for _, p := range ph {
+	for _, p := range ph.Photos[0] {
 		if p.Height >= minSize {
 			fid = p.FileID
 			break
 		}
 	}
-	rc := ctx.Download(fid)
+	rc, err := ctx.DownloadReaderFile(fid)
+	if err != nil {
+		return nil, err
+	}
 	i, _, err := utils.Decode(rc)
 	rc.Close()
 	return i, err

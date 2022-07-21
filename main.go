@@ -11,12 +11,9 @@ import (
 	"tghwbot/modules/images"
 	"tghwbot/modules/random"
 	"tghwbot/modules/text"
-
-	"github.com/Toffee-iZt/wfs"
 )
 
 func main() {
-	println(wfs.ExecPath())
 	println("PID", os.Getpid())
 
 	log := logger.New(logger.DefaultWriter, "HwBot")
@@ -36,7 +33,7 @@ func main() {
 	}
 
 	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
-	err = b.Run(ctx)
+	err = b.Run(ctx, 0)
 
 	switch err {
 	case nil:
