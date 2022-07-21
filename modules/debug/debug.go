@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"runtime"
+	"runtime/debug"
+	"strings"
 	"tghwbot/bot"
+	"tghwbot/bot/tg"
 	"tghwbot/common/format"
 	"tghwbot/common/rt"
 	"time"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 var DebugCmd = bot.Command{
@@ -17,25 +18,55 @@ var DebugCmd = bot.Command{
 	Description: "debug",
 	Args: []bot.Arg{
 		{
-			Consts: []string{"obj", "stat", "gc"},
+			Consts: []string{"info", "obj", "mem"},
+		},
+		{
+			Consts: []string{"gc"},
 		},
 	},
-	Run: func(ctx *bot.Context, msg *tgbotapi.Message, args []string) {
+	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		var out string
 		if len(args) == 0 {
-			out = memStats(false)
+			out = stat()
 		} else {
 			switch args[0] {
+			case "info":
+				out = info()
 			case "obj":
 				out = marshalObj(msg)
-			case "stat":
-				out = stat()
-			case "gc":
-				out = memStats(true)
+			case "mem":
+				out = memStats(len(args) > 1 && args[1] == "gc")
 			}
 		}
-		ctx.ReplyText(out)
+		ctx.Reply(out)
 	},
+}
+
+func info() string {
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		return runtime.Version()
+	}
+	var revision, time, modified string
+	for _, s := range bi.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			revision = s.Value
+			if len(revision) > 8 {
+				revision = revision[:8]
+			}
+		case "vcs.time":
+			time = s.Value
+		case "vcs.modified":
+			modified = s.Value
+		}
+	}
+	var buf strings.Builder
+	buf.WriteString("Go version: " + bi.GoVersion + "\n\n")
+	buf.WriteString("Commit: " + revision + "\n")
+	buf.WriteString("Commit time: " + time + "\n")
+	buf.WriteString("Have uncommited changes: " + modified)
+	return buf.String()
 }
 
 func marshalObj(obj interface{}) string {
@@ -51,7 +82,7 @@ var start = time.Now()
 func stat() string {
 	t := start.Format("02 Jan 2006 15:04:05")
 	uptime := time.Now().Sub(start).Truncate(time.Second)
-	return fmt.Sprintf("Stats\n\nStart time: %s\nUptime:%s", t, uptime)
+	return fmt.Sprintf("Stats\n\nStart time: %s\nUptime: %s", t, uptime)
 }
 
 func memStats(gc bool) string {

@@ -2,54 +2,50 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"tghwbot/bot"
+	"tghwbot/bot/logger"
 	"tghwbot/modules/debug"
 	"tghwbot/modules/images"
 	"tghwbot/modules/random"
 	"tghwbot/modules/text"
-	"tghwbot/modules/wikihow"
-
-	"github.com/Toffee-iZt/wfs"
 )
 
 func main() {
-	println(wfs.ExecPath())
 	println("PID", os.Getpid())
 
-	cmds := []*bot.Command{
-		&debug.DebugCmd,
-		&random.Flip,
-		&random.Info,
-		&random.Number,
-		&random.When,
-		&text.Gen,
-		&text.Buzzword,
-		&text.Fact,
-		&text.Phrase,
-		&text.Quote,
-		&images.CitgenCmd,
-		&images.Search,
-		&images.Forza,
-		&wikihow.Wikihow,
-	}
-	b, err := bot.New(os.Getenv("TOKEN"), cmds...)
+	log := logger.New(logger.DefaultWriter, "HwBot")
+
+	b, err := bot.New(bot.Config{
+		Token:    os.Getenv("TOKEN"),
+		Logger:   log,
+		MakeHelp: true,
+		Commands: []*bot.Command{
+			&debug.DebugCmd,
+			&random.Flip,
+			&random.Info,
+			&random.Number,
+			&random.When,
+			&text.Gen,
+			&images.CitgenCmd,
+			&images.Search,
+		},
+	})
 	if err != nil {
-		log.Panicf("tg auth: %s", err.Error())
+		panic(err)
 	}
 
 	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
-	err = b.Run(ctx)
+	err = b.Run(ctx, 0)
 
 	switch err {
 	case nil:
-		log.Print("stopping without error")
+		log.Info("stopping without error")
 	case context.Canceled:
-		log.Print("stopping by os signal")
+		log.Info("stopping by os signal")
 	default:
-		log.Fatalf("bot finished with an error: %s", err)
+		log.Error("bot finished with an error: %s", err)
 	}
 }
