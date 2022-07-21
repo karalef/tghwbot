@@ -341,14 +341,3 @@ func (d Dice) params() params {
 	d.SendOptions.embed(p)
 	return p
 }
-
-// ChatAction contains information about the chat action to be sent.
-type ChatAction tg.ChatAction
-
-func (ChatAction) what() string {
-	return "ChatAction"
-}
-
-func (a ChatAction) params() params {
-	return params{}.set("action", string(a))
-}

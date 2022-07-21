@@ -72,3 +72,12 @@ func (c *Chat) Send(s Sendable) *tg.Message {
 
 	return api[*tg.Message](c.ctx, m, p)
 }
+
+// SendChatAction sends chat action to tell the user that something
+// is happening on the bot's side.
+func (c *Chat) SendChatAction(act tg.ChatAction) {
+	p := params{}
+	p.set("chat_id", c.chatID)
+	p.set("action", string(act))
+	api[bool](c.ctx, "sendChatAction", p)
+}
