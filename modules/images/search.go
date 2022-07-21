@@ -20,7 +20,7 @@ var Search = bot.Command{
 		if q == "" {
 			ctx.Reply("Provide keywords")
 		}
-		ctx.Chat.Send(bot.ChatAction(tg.ActionUploadPhoto))
+		ctx.Chat.SendChatAction(tg.ActionUploadPhoto)
 		resp, err := http.Get("https://imsea.herokuapp.com/api/1?q=" + q)
 		if err != nil {
 			log.Println("image search:", err.Error())

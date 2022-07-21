@@ -20,7 +20,7 @@ var Gen = bot.Command{
 
 		textgenMut.Lock()
 		defer textgenMut.Unlock()
-		ctx.Chat.Send(bot.ChatAction(tg.ActionTyping))
+		ctx.Chat.SendChatAction(tg.ActionTyping)
 		replies, err := porfirevich(query, 30)
 		if err != nil {
 			ctx.Logger().Error(err.Error())
