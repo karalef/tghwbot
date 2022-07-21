@@ -5,8 +5,7 @@ import (
 	"tghwbot/bot/tg"
 )
 
-// MakeHelp makes default help command.
-func MakeHelp(b *Bot) *Command {
+func makeHelp(b *Bot) *Command {
 	h := Command{
 		Cmd:         "help",
 		Description: "help",

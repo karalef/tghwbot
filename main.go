@@ -18,16 +18,20 @@ func main() {
 
 	log := logger.New(logger.DefaultWriter, "HwBot")
 
-	cmds := []*bot.Command{
-		&debug.DebugCmd,
-		&random.Flip,
-		&random.Info,
-		&random.Number,
-		&random.When,
-		&text.Gen,
-		&images.CitgenCmd,
-	}
-	b, err := bot.New(os.Getenv("TOKEN"), log, cmds...)
+	b, err := bot.New(bot.Config{
+		Token:    os.Getenv("TOKEN"),
+		Logger:   log,
+		MakeHelp: true,
+		Commands: []*bot.Command{
+			&debug.DebugCmd,
+			&random.Flip,
+			&random.Info,
+			&random.Number,
+			&random.When,
+			&text.Gen,
+			&images.CitgenCmd,
+		},
+	})
 	if err != nil {
 		panic(err)
 	}

@@ -10,21 +10,32 @@ import (
 	"tghwbot/bot/tg"
 )
 
+// Config contains bot configuration.
+type Config struct {
+	Token    string
+	Logger   *logger.Logger // logger.DefaultWriter if empty
+	Commands []*Command
+	MakeHelp bool
+}
+
 // New creates new bot.
-func New(token string, log *logger.Logger, cmds ...*Command) (*Bot, error) {
-	if token == "" {
+func New(config Config) (*Bot, error) {
+	if config.Token == "" {
 		return nil, errors.New("no token provided")
 	}
-	if log == nil {
-		log = logger.New(logger.DefaultWriter, "")
+	if config.Logger == nil {
+		config.Logger = logger.New(logger.DefaultWriter, "")
 	}
 	b := Bot{
-		token:   token,
+		token:   config.Token,
 		apiURL:  tg.DefaultAPIURL,
 		fileURL: tg.DefaultFileURL,
 		client:  &http.Client{},
-		log:     log,
-		cmds:    cmds,
+		log:     config.Logger,
+		cmds:    config.Commands,
+	}
+	if config.MakeHelp {
+		b.cmds = append(b.cmds, makeHelp(&b))
 	}
 
 	me, err := b.getMe()
