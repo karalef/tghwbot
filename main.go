@@ -24,7 +24,6 @@ func main() {
 		MakeHelp: true,
 		Commands: []*bot.Command{
 			&debug.DebugCmd,
-			&random.Flip,
 			&random.Info,
 			&random.Number,
 			&random.When,
