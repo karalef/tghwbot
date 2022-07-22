@@ -12,12 +12,12 @@ import (
 
 var myRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-// RandInt returns random int in range 0-max.
+// RandInt returns random int in range [0,max).
 func RandInt(max int) int {
 	return myRand.Intn(max)
 }
 
-// RandP returns random int in range 0-max with probability
+// RandP returns random int in range [0,max) with probability
 // controlled by power.
 func RandP(max int, power float64) int {
 	r := myRand.Float64()
@@ -33,33 +33,20 @@ var Number = bot.Command{
 		if len(args) > 0 {
 			num := args[0]
 			var err error
-			if strings.IndexByte(num, '-') > 0 {
-				s := strings.SplitN(num, "-", 2)
-				offset, err = strconv.ParseInt(s[0], 10, 64)
+			if i := strings.IndexByte(num, '-'); i > 0 && i < len(num)-1 {
+				offset, err = strconv.ParseInt(num[:i], 10, 64)
 				if err != nil || offset < 0 {
-					ctx.Reply("Укажите числа от 1 до MaxInt64")
+					ctx.Reply("Specify the numbers in range 0 - MaxInt64")
 				}
-				num = s[2]
+				num = num[i+1:]
 			}
 			max, err = strconv.ParseInt(num, 10, 64)
 			if err != nil || max <= 0 {
-				ctx.Reply("Укажите число от 1 до MaxInt64")
+				ctx.Reply("Specify the number in range 1 - MaxInt64")
 			}
 		}
 		max -= offset
-		ctx.Reply("Выпало число " + strconv.FormatInt(offset+myRand.Int63n(max), 10))
-	},
-}
-
-var Flip = bot.Command{
-	Cmd:         "flip",
-	Description: "flip a coin",
-	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
-		r := "Выпала решка"
-		if myRand.Intn(2) == 1 {
-			r = "Выпал орел"
-		}
-		ctx.Reply(r)
+		ctx.Reply(strconv.FormatInt(offset+myRand.Int63n(max), 10))
 	},
 }
 
@@ -68,20 +55,20 @@ var Info = bot.Command{
 	Description: "event probability",
 	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		if len(args) == 0 {
-			ctx.Reply("Укажите событие")
+			ctx.Reply("Specify the event")
 		}
 		p := myRand.Intn(101)
 		e := strings.Join(args, " ")
-		ctx.Reply("Вероятность того, что " + e + " — " + strconv.Itoa(p) + "%")
+		ctx.Reply("The probability that " + e + " — " + strconv.Itoa(p) + "%")
 	},
 }
 
 var When = bot.Command{
 	Cmd:         "when",
-	Description: "Когда произойдет событие",
+	Description: "random date of event",
 	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
 		if len(args) == 0 {
-			ctx.Reply("Укажите событие")
+			ctx.Reply("Provide the event")
 		}
 		t := time.Now().AddDate(RandP(51, 1.5), RandInt(12), RandInt(31))
 		e := strings.Join(args, " ")
