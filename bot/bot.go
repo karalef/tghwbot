@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"runtime"
 	"strings"
+	"sync"
 	"tghwbot/bot/logger"
 	"tghwbot/bot/tg"
 )
@@ -55,6 +56,7 @@ type Bot struct {
 	client  *http.Client
 	log     *logger.Logger
 
+	wg   sync.WaitGroup
 	stop context.CancelFunc
 	cmds []*Command
 
@@ -89,6 +91,9 @@ func (b *Bot) Run(ctx context.Context, lastUpdate int) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	if b.stop != nil {
+		return nil
+	}
 	ctx, b.stop = context.WithCancel(ctx)
 
 	err := b.setupCommands()
@@ -96,6 +101,7 @@ func (b *Bot) Run(ctx context.Context, lastUpdate int) error {
 		return err
 	}
 
+	defer b.wg.Wait()
 	for {
 		upds, err := b.getUpdates(ctx, lastUpdate+1, 30, "message")
 		switch err {
@@ -106,13 +112,15 @@ func (b *Bot) Run(ctx context.Context, lastUpdate int) error {
 			return err
 		}
 		for i := range upds {
-			b.handle(&upds[i])
+			go b.handle(&upds[i])
 			lastUpdate = upds[i].ID
 		}
 	}
 }
 
 func (b *Bot) handle(upd *tg.Update) {
+	b.wg.Add(1)
+	defer b.wg.Done()
 	switch {
 	case upd.Message != nil:
 		b.onMessage(upd.Message)
@@ -130,7 +138,7 @@ func (b *Bot) onMessage(msg *tg.Message) {
 	}
 
 	ctx := b.makeContext(cmd, msg)
-	go cmd.Run(ctx, msg, args)
+	cmd.Run(ctx, msg, args)
 }
 
 func (b *Bot) parseCommand(c string) (cmd *Command, args []string) {
