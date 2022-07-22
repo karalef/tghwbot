@@ -14,9 +14,8 @@ import (
 )
 
 func main() {
-	println("PID", os.Getpid())
-
 	log := logger.New(logger.DefaultWriter, "HwBot")
+	log.Info("PID: %d", os.Getpid())
 
 	b, err := bot.New(bot.Config{
 		Token:    os.Getenv("TOKEN"),
