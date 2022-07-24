@@ -71,8 +71,49 @@ func (b *Bot) requestURL(method string) string {
 	return b.apiURL + b.token + "/" + method
 }
 
-func performRequest[T any](b *Bot, method string, p params) (T, error) {
-	return performRequestContext[T](context.Background(), b, method, p)
+func performRequest[T any](b *Bot, method string, p params, files ...File) (T, error) {
+	if files == nil {
+		return performRequestContext[T](context.Background(), b, method, p)
+	}
+
+	r, w := io.Pipe()
+	mp := multipart.NewWriter(w)
+	go func() {
+		defer mp.Close()
+		defer w.Close()
+
+		err := p.forEach(mp.WriteField)
+		if err != nil {
+			w.CloseWithError(err)
+			return
+		}
+
+		for _, file := range files {
+			if d := file.Data(); d != "" {
+				err := mp.WriteField(file.Field, d)
+				if err != nil {
+					w.CloseWithError(err)
+					return
+				}
+				continue
+			}
+
+			name, reader := file.UploadData()
+			part, err := mp.CreateFormFile(file.Field, name)
+			if err != nil {
+				w.CloseWithError(err)
+				return
+			}
+			_, err = io.Copy(part, reader)
+			if err != nil {
+				w.CloseWithError(err)
+				return
+			}
+		}
+	}()
+
+	resp, err := b.client.Post(b.requestURL(method), mp.FormDataContentType(), r)
+	return decodeResponse[T](method, resp, err)
 }
 
 func performRequestEmpty(b *Bot, method string, p params) error {
@@ -116,49 +157,6 @@ func performRequestContext[T any](ctx context.Context, b *Bot, method string, p 
 type File struct {
 	Field string
 	*tg.InputFile
-}
-
-func uploadFiles[T any](b *Bot, method string, p params, files []File) (T, error) {
-	r, w := io.Pipe()
-	mp := multipart.NewWriter(w)
-	go func() {
-		defer mp.Close()
-		defer w.Close()
-
-		err := p.forEach(func(field, value string) error {
-			return mp.WriteField(field, value)
-		})
-		if err != nil {
-			w.CloseWithError(err)
-			return
-		}
-
-		for _, file := range files {
-			if d := file.Data(); d != "" {
-				err := mp.WriteField(file.Field, d)
-				if err != nil {
-					w.CloseWithError(err)
-					return
-				}
-				continue
-			}
-
-			name, reader := file.UploadData()
-			part, err := mp.CreateFormFile(file.Field, name)
-			if err != nil {
-				w.CloseWithError(err)
-				return
-			}
-			_, err = io.Copy(part, reader)
-			if err != nil {
-				w.CloseWithError(err)
-				return
-			}
-		}
-	}()
-
-	resp, err := b.client.Post(b.requestURL(method), mp.FormDataContentType(), r)
-	return decodeResponse[T](method, resp, err)
 }
 
 func (b *Bot) downloadFile(path string) (io.ReadCloser, error) {

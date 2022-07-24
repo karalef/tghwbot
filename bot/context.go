@@ -100,13 +100,7 @@ type commonContext interface {
 
 func api[T any](c commonContext, method string, p params, files ...File) T {
 	bot := c.getBot()
-	var result T
-	var err error
-	if len(files) > 0 {
-		result, err = uploadFiles[T](bot, method, p, files)
-	} else {
-		result, err = performRequest[T](bot, method, p)
-	}
+	result, err := performRequest[T](bot, method, p, files...)
 	switch err.(type) {
 	case nil:
 		return result
