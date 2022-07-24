@@ -28,11 +28,11 @@ type ReplyKeyboardMarkup struct {
 
 // KeyboardButton represents one button of the reply keyboard.
 type KeyboardButton struct {
-	Text            string         `json:"text"`
-	RequestContact  bool           `json:"request_contact,omitempty"`
-	RequestLocation bool           `json:"request_location,omitempty"`
-	RequestPoll     ButtonPollType `json:"request_poll,omitempty"`
-	WebApp          WebAppInfo     `json:"web_app,omitmepty"`
+	Text            string          `json:"text"`
+	RequestContact  bool            `json:"request_contact,omitempty"`
+	RequestLocation bool            `json:"request_location,omitempty"`
+	RequestPoll     *ButtonPollType `json:"request_poll,omitempty"`
+	WebApp          *WebAppInfo     `json:"web_app,omitmepty"`
 }
 
 // ButtonPollType represents type of a poll, which is allowed
@@ -91,7 +91,7 @@ type CallbackQuery struct {
 	ID              string   `json:"id"`
 	From            *User    `json:"from"`
 	Message         *Message `json:"message,omitempty"`
-	InlineNessageID string   `json:"inline_message_id,omitempty"`
+	InlineMessageID string   `json:"inline_message_id,omitempty"`
 	ChatInstance    string   `json:"chat_instance,omitempty"`
 	Data            string   `json:"data,omitempty"`
 	GameShortName   string   `json:"game_short_name,omitempty"`
