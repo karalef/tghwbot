@@ -126,3 +126,25 @@ type ChatLocation struct {
 	Location Location `json:"location"`
 	Address  string   `json:"address"`
 }
+
+// ChatInviteLink represents an invite link for a chat.
+type ChatInviteLink struct {
+	InviteLink         string `json:"invite_link"`
+	Creator            *User  `json:"creator"`
+	CreatesJoinRequest bool   `json:"creates_join_request"`
+	IsPrimary          bool   `json:"is_primary"`
+	IsRevoked          bool   `json:"is_revoked"`
+	Name               string `json:"name,omitempty"`
+	ExpireDate         int64  `json:"expire_date,omitempty"`
+	MemberLimit        int    `json:"member_limit,omitempty"`
+	PendingCount       int    `json:"pending_join_request_count,omitempty"`
+}
+
+// ChatJoinRequest represents a join request sent to a chat.
+type ChatJoinRequest struct {
+	Chat       *Chat           `json:"chat"`
+	From       *User           `json:"from"`
+	Date       int64           `json:"date"`
+	Bio        string          `json:"bio,omitempty"`
+	InviteLink *ChatInviteLink `json:"invite_link,omitempty"`
+}

@@ -47,7 +47,7 @@ type Update struct {
 	PollAnswer *PollAnswer `json:"poll_answer"`
 	//MyChatMember    *ChatMemberUpdate `json:"my_chat_member"`
 	//ChatMember      *ChatMemberUpdate `json:"chat_member"`
-	//ChatJoinRequest *ChatJoinRequest  `json:"chat_join_request"`
+	ChatJoinRequest *ChatJoinRequest `json:"chat_join_request"`
 }
 
 // Command represents a bot command.
