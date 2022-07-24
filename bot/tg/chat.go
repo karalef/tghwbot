@@ -148,3 +148,55 @@ type ChatJoinRequest struct {
 	Bio        string          `json:"bio,omitempty"`
 	InviteLink *ChatInviteLink `json:"invite_link,omitempty"`
 }
+
+// ChatMemberUpdated represents changes in the status of a chat member.
+type ChatMemberUpdated struct {
+	Chat       *Chat           `json:"chat"`
+	From       *User           `json:"from"`
+	Date       int64           `json:"date"`
+	Old        *ChatMember     `json:"old_chat_member"`
+	New        *ChatMember     `json:"new_chat_member"`
+	InviteLink *ChatInviteLink `json:"invite_link"`
+}
+
+// ChatMember contains information about one member of a chat.
+type ChatMember struct {
+	Status      string `json:"status"`
+	User        *User  `json:"user"`
+	CustomTitle string `json:"custom_title"`
+	CanBeEdited bool   `json:"can_be_edited"`
+	IsMember    bool   `json:"is_member"`
+	UntilDate   int64  `json:"until_date"`
+	ChatPermissions
+	ChatAdministratorRights
+}
+
+// IsOwner func.
+func (m *ChatMember) IsOwner() bool {
+	return m.Status == "creator"
+}
+
+// IsAdmin func.
+func (m *ChatMember) IsAdmin() bool {
+	return m.Status == "administrator"
+}
+
+// IsDefault func.
+func (m *ChatMember) IsDefault() bool {
+	return m.Status == "member"
+}
+
+// IsRestricted func.
+func (m *ChatMember) IsRestricted() bool {
+	return m.Status == "restricted"
+}
+
+// IsLeft func.
+func (m *ChatMember) IsLeft() bool {
+	return m.Status == "left"
+}
+
+// IsBanned func.
+func (m *ChatMember) IsBanned() bool {
+	return m.Status == "kicked"
+}

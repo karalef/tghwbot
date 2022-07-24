@@ -33,21 +33,34 @@ func (e *APIError) Error() string {
 
 // Update object represents an incoming update.
 type Update struct {
-	ID                int      `json:"update_id"`
-	Message           *Message `json:"message"`
-	EditedMessage     *Message `json:"edited_message"`
-	ChannelPost       *Message `json:"channel_post"`
-	EditedChannelPost *Message `json:"edited_channel_post"`
-	//CallbackQuery     *CallbackQuery `json:"callback_query"`
-	InlineQuery  *InlineQuery  `json:"inline_query"`
-	InlineChosen *InlineChosen `json:"chosen_inline_result"`
-	//ShippingQuery     *ShippingQuery `json:"shipping_query"`
-	//PreCheckoutQuery  *PreCheckoutQuery `json:"pre_checkout_query"`
-	Poll       *Poll       `json:"poll"`
-	PollAnswer *PollAnswer `json:"poll_answer"`
-	//MyChatMember    *ChatMemberUpdate `json:"my_chat_member"`
-	//ChatMember      *ChatMemberUpdate `json:"chat_member"`
-	ChatJoinRequest *ChatJoinRequest `json:"chat_join_request"`
+	ID                int                `json:"update_id"`
+	Message           *Message           `json:"message"`
+	EditedMessage     *Message           `json:"edited_message"`
+	ChannelPost       *Message           `json:"channel_post"`
+	EditedChannelPost *Message           `json:"edited_channel_post"`
+	CallbackQuery     *CallbackQuery     `json:"callback_query"`
+	InlineQuery       *InlineQuery       `json:"inline_query"`
+	InlineChosen      *InlineChosen      `json:"chosen_inline_result"`
+	ShippingQuery     *ShippingQuery     `json:"shipping_query"`
+	PreCheckoutQuery  *PreCheckoutQuery  `json:"pre_checkout_query"`
+	Poll              *Poll              `json:"poll"`
+	PollAnswer        *PollAnswer        `json:"poll_answer"`
+	MyChatMember      *ChatMemberUpdated `json:"my_chat_member"`
+	ChatMember        *ChatMemberUpdated `json:"chat_member"`
+	ChatJoinRequest   *ChatJoinRequest   `json:"chat_join_request"`
+}
+
+// WebhookInfo describes the current status of a webhook.
+type WebhookInfo struct {
+	URL                string   `json:"url"`
+	HasCustomCert      bool     `json:"has_custom_certificate"`
+	PendingUpdateCount int      `json:"pending_update_count"`
+	IPAddress          string   `json:"ip_address,omitempty"`
+	LastErrorDate      int64    `json:"last_error_date,omitempty"`
+	LastErrorMessage   string   `json:"last_error_message,omitempty"`
+	LastSyncErrorDate  int64    `json:"last_synchronization_error_date,omitempty"`
+	MaxConnections     int      `json:"max_connections,omitempty"`
+	AllowedUpdates     []string `json:"allowed_updates,omitempty"`
 }
 
 // Command represents a bot command.

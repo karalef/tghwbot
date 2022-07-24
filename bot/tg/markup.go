@@ -32,13 +32,13 @@ type KeyboardButton struct {
 	RequestContact  bool           `json:"request_contact,omitempty"`
 	RequestLocation bool           `json:"request_location,omitempty"`
 	RequestPoll     ButtonPollType `json:"request_poll,omitempty"`
-	WebApp          WebAppInfo     `json:"web_app"`
+	WebApp          WebAppInfo     `json:"web_app,omitmepty"`
 }
 
 // ButtonPollType represents type of a poll, which is allowed
 // to be created and sent when the corresponding button is pressed.
 type ButtonPollType struct {
-	Type PollType `json:"type"`
+	Type PollType `json:"type,omitempty"`
 }
 
 // ReplyKeyboardRemove represents an object, on receipt of which Telegram clients
@@ -65,15 +65,15 @@ type InlineKeyboardMarkup struct {
 
 // InlineKeyboardButton represents one button of an inline keyboard.
 type InlineKeyboardButton struct {
-	Text                string      `json:"text"`
-	URL                 string      `json:"url,omitempty"`
-	CallbackData        string      `json:"callback_data,omitempty"`
-	WebApp              *WebAppInfo `json:"web_app,omitempty"`
-	LoginURL            LoginURL    `json:"login_url,omitempty"`
-	SwitchInline        string      `json:"switch_inline_query,omitempty"`
-	SwitchInlineCurrent string      `json:"switch_inline_query_current_chat,omitempty"`
-	// CallbackGame CallbackGame `json:"callback_game,omitempty"`
-	Pay bool `json:"pay,omitempty"`
+	Text                string        `json:"text"`
+	URL                 string        `json:"url,omitempty"`
+	CallbackData        string        `json:"callback_data,omitempty"`
+	WebApp              *WebAppInfo   `json:"web_app,omitempty"`
+	LoginURL            *LoginURL     `json:"login_url,omitempty"`
+	SwitchInline        string        `json:"switch_inline_query,omitempty"`
+	SwitchInlineCurrent string        `json:"switch_inline_query_current_chat,omitempty"`
+	CallbackGame        *CallbackGame `json:"callback_game,omitempty"`
+	Pay                 bool          `json:"pay,omitempty"`
 }
 
 // LoginURL represents a parameter of the inline keyboard button
@@ -83,4 +83,16 @@ type LoginURL struct {
 	ForwardText  string `json:"forward_text,omitempty"`
 	BotUsername  string `json:"bot_username,omitempty"`
 	RequestWrite bool   `json:"request_write_access,omitempty"`
+}
+
+// CallbackQuery represents an incoming callback query from a callback
+// button in an inline keyboard.
+type CallbackQuery struct {
+	ID              string   `json:"id"`
+	From            *User    `json:"from"`
+	Message         *Message `json:"message,omitempty"`
+	InlineNessageID string   `json:"inline_message_id,omitempty"`
+	ChatInstance    string   `json:"chat_instance,omitempty"`
+	Data            string   `json:"data,omitempty"`
+	GameShortName   string   `json:"game_short_name,omitempty"`
 }
