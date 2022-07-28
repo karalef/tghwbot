@@ -21,7 +21,7 @@ func RandInt(max int) int {
 // controlled by power.
 func RandP(max int, power float64) int {
 	r := myRand.Float64()
-	return int(math.Floor(float64(max+1) * math.Pow(r, power)))
+	return int(math.Floor(float64(max) * math.Pow(r, power)))
 }
 
 var Number = bot.Command{
