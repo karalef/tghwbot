@@ -40,7 +40,7 @@ type InlineAnswer struct {
 // Answer answers to inline query.
 func (c *InlineContext) Answer(answer *InlineAnswer) {
 	p := params{}.set("inline_query_id", c.inlineQueryID)
-	p.set("result", answer.Results)
+	p.set("results", answer.Results)
 	p.set("cache_time", answer.CacheTime)
 	p.set("is_personal", answer.IsPersonal)
 	p.set("next_offset", answer.NextOffset)

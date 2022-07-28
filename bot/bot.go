@@ -65,7 +65,10 @@ type Bot struct {
 	wg   sync.WaitGroup
 	ctx  context.Context
 	stop context.CancelFunc
+
 	cmds []*Command
+
+	OnInlineQuery func(*InlineContext, *tg.InlineQuery)
 
 	Me *tg.User
 }
@@ -108,7 +111,7 @@ func (b *Bot) Run(lastUpdate int) error {
 
 	defer b.wg.Wait()
 	for {
-		upds, err := b.getUpdates(lastUpdate+1, 30)
+		upds, err := b.getUpdates(lastUpdate+1, 30, make([]string, 0)...)
 		switch err {
 		case nil:
 		case context.Canceled, context.DeadlineExceeded:
@@ -129,6 +132,8 @@ func (b *Bot) handle(upd *tg.Update) {
 	switch {
 	case upd.Message != nil:
 		b.onMessage(upd.Message)
+	case upd.InlineQuery != nil && b.OnInlineQuery != nil:
+		b.OnInlineQuery(b.makeInlineContext(upd.InlineQuery), upd.InlineQuery)
 	}
 }
 
