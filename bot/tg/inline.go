@@ -367,7 +367,6 @@ func (InlineQueryResultMPEG4GIF) inlineQueryResultType() string {
 type InlineQueryResultPhoto struct {
 	ID                  string                `json:"id"`
 	URL                 string                `json:"photo_url"`
-	MimeType            string                `json:"mime_type"`
 	Width               int                   `json:"photo_width,omitempty"`
 	Height              int                   `json:"photo_height,omitempty"`
 	ThumbURL            string                `json:"thumb_url,omitempty"`

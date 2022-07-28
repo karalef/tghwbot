@@ -14,10 +14,12 @@ import (
 )
 
 func main() {
-	log := logger.New(logger.DefaultWriter, "HwBot")
+	log := logger.New(logger.NewWriter(os.Stderr, true), "HwBot")
 	log.Info("PID: %d", os.Getpid())
 
-	b, err := bot.New(bot.Config{
+	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+
+	b, err := bot.NewWithContext(ctx, bot.Config{
 		Token:    os.Getenv("TOKEN"),
 		Logger:   log,
 		MakeHelp: true,
@@ -35,8 +37,7 @@ func main() {
 		panic(err)
 	}
 
-	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
-	err = b.Run(ctx, 0)
+	err = b.Run(0)
 
 	switch err {
 	case nil:

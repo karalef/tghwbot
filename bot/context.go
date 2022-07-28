@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"strconv"
+	"tghwbot/bot/internal"
 	"tghwbot/bot/logger"
 	"tghwbot/bot/tg"
 )
@@ -105,7 +106,7 @@ func api[T any](c commonContext, method string, p params, files ...File) T {
 	case nil:
 		return result
 	case *tg.APIError:
-		bot.log.Warn("from '%s'\n%s", c.caller(), err.Error())
+		bot.log.Error("%s\n%s\n%s", err.Error(), c.caller(), backtrace())
 		c.Close()
 		return result
 	}
@@ -113,10 +114,14 @@ func api[T any](c commonContext, method string, p params, files ...File) T {
 	switch err {
 	case context.Canceled, context.DeadlineExceeded:
 	default:
-		bot.log.Error(err.Error())
+		bot.log.Error("%s\n%s\n%s", err.Error(), c.caller(), backtrace())
 	}
 	c.Close()
 	return result
+}
+
+func backtrace() string {
+	return internal.FramesString(internal.BackTrace(2, 2), true)
 }
 
 func (b *Bot) makeContext(cmd *Command, msg *tg.Message) *Context {
@@ -140,7 +145,7 @@ type Context struct {
 }
 
 func (c *Context) caller() string {
-	return c.cmd.Cmd
+	return "command '" + c.cmd.Cmd + "'"
 }
 
 // Reply sends message to the current chat and closes context.

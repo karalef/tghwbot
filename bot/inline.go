@@ -24,7 +24,7 @@ type InlineContext struct {
 }
 
 func (c *InlineContext) caller() string {
-	return "bot::InlineHandler"
+	return "inline handler"
 }
 
 // InlineAnswer represents answer to inline query.

@@ -21,6 +21,11 @@ type Config struct {
 
 // New creates new bot.
 func New(config Config) (*Bot, error) {
+	return NewWithContext(context.Background(), config)
+}
+
+// New creates new bot with context.
+func NewWithContext(ctx context.Context, config Config) (*Bot, error) {
 	if config.Token == "" {
 		return nil, errors.New("no token provided")
 	}
@@ -34,6 +39,7 @@ func New(config Config) (*Bot, error) {
 		client:  &http.Client{},
 		log:     config.Logger,
 		cmds:    config.Commands,
+		ctx:     ctx,
 	}
 	if config.MakeHelp {
 		b.cmds = append(b.cmds, makeHelp(&b))
@@ -57,6 +63,7 @@ type Bot struct {
 	log     *logger.Logger
 
 	wg   sync.WaitGroup
+	ctx  context.Context
 	stop context.CancelFunc
 	cmds []*Command
 
@@ -83,18 +90,16 @@ func (b *Bot) Stop() {
 	if b.stop != nil {
 		b.stop()
 	}
+	b.wg.Wait()
 }
 
 // Run starts bot.
 // Returns nil if context is closed.
-func (b *Bot) Run(ctx context.Context, lastUpdate int) error {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+func (b *Bot) Run(lastUpdate int) error {
 	if b.stop != nil {
 		return nil
 	}
-	ctx, b.stop = context.WithCancel(ctx)
+	b.ctx, b.stop = context.WithCancel(b.ctx)
 
 	err := b.setupCommands()
 	if err != nil {
@@ -103,7 +108,7 @@ func (b *Bot) Run(ctx context.Context, lastUpdate int) error {
 
 	defer b.wg.Wait()
 	for {
-		upds, err := b.getUpdates(ctx, lastUpdate+1, 30, "message")
+		upds, err := b.getUpdates(lastUpdate+1, 30)
 		switch err {
 		case nil:
 		case context.Canceled, context.DeadlineExceeded:
