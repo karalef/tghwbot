@@ -167,7 +167,12 @@ type ChatMember struct {
 	CanBeEdited bool   `json:"can_be_edited"`
 	IsMember    bool   `json:"is_member"`
 	UntilDate   int64  `json:"until_date"`
-	ChatPermissions
+
+	CanSendMessages bool `json:"can_send_messages"`
+	CanSendMedia    bool `json:"can_send_media_messages"`
+	CanSendPolls    bool `json:"can_send_polls"`
+	CanSendOther    bool `json:"can_send_other_messages"`
+	CanAddPreviews  bool `json:"can_add_web_page_previews"`
 	ChatAdministratorRights
 }
 
