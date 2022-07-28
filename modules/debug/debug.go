@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"runtime"
-	"runtime/debug"
-	"strings"
 	"tghwbot/bot"
 	"tghwbot/bot/tg"
 	"tghwbot/common/format"
@@ -18,7 +16,7 @@ var DebugCmd = bot.Command{
 	Description: "debug",
 	Args: []bot.Arg{
 		{
-			Consts: []string{"info", "obj", "mem"},
+			Consts: []string{"obj", "mem"},
 		},
 		{
 			Consts: []string{"gc"},
@@ -30,8 +28,6 @@ var DebugCmd = bot.Command{
 			out = stat()
 		} else {
 			switch args[0] {
-			case "info":
-				out = info()
 			case "obj":
 				out = marshalObj(msg)
 			case "mem":
@@ -40,33 +36,6 @@ var DebugCmd = bot.Command{
 		}
 		ctx.Reply(out)
 	},
-}
-
-func info() string {
-	bi, ok := debug.ReadBuildInfo()
-	if !ok {
-		return runtime.Version()
-	}
-	var revision, time, modified string
-	for _, s := range bi.Settings {
-		switch s.Key {
-		case "vcs.revision":
-			revision = s.Value
-			if len(revision) > 8 {
-				revision = revision[:8]
-			}
-		case "vcs.time":
-			time = s.Value
-		case "vcs.modified":
-			modified = s.Value
-		}
-	}
-	var buf strings.Builder
-	buf.WriteString("Go version: " + bi.GoVersion + "\n\n")
-	buf.WriteString("Commit: " + revision + "\n")
-	buf.WriteString("Commit time: " + time + "\n")
-	buf.WriteString("Have uncommited changes: " + modified)
-	return buf.String()
 }
 
 func marshalObj(obj interface{}) string {
