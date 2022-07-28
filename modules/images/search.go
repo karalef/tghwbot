@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"tghwbot/bot"
 	"tghwbot/bot/tg"
@@ -48,4 +49,33 @@ func searchImages(q string) ([]string, error) {
 	json.NewDecoder(resp.Body).Decode(&res)
 	resp.Body.Close()
 	return res.Results, nil
+}
+
+func OnInline(ctx *bot.InlineContext, q *tg.InlineQuery) {
+	imgs, err := searchImages(q.Query)
+	if len(imgs) == 0 {
+		if err != nil {
+			ctx.Logger().Error(err.Error())
+		}
+		ctx.Answer(&bot.InlineAnswer{})
+	}
+
+	n := len(imgs)
+	if n > 10 {
+		n = 10
+	}
+
+	results := make([]tg.InlineQueryResult, n)
+	for i := 0; i < n; i++ {
+		results[i].ID = strconv.Itoa(i)
+		results[i].Result = tg.InlineQueryResultPhoto{
+			URL:          imgs[i],
+			ThumbnailURL: imgs[i],
+			Caption:      q.Query,
+		}
+	}
+
+	ctx.Answer(&bot.InlineAnswer{
+		Results: results,
+	}, 60)
 }

@@ -43,6 +43,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	b.OnInlineQuery = images.OnInline
 
 	err = b.Run(0)
 
