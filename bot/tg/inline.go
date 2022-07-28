@@ -26,15 +26,25 @@ type InlineChosen struct {
 
 // InlineQueryResult represents one result of an inline query.
 type InlineQueryResult struct {
-	InlineQueryResultObject
+	ID     string
+	Result InlineQueryResultObject
 }
 
 // MarshalJSON implements json.Marshaler.
 func (r *InlineQueryResult) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
+	d, err := json.Marshal(struct {
 		Type string `json:"type"`
-		InlineQueryResultObject
-	}{r.inlineQueryResultType(), r.InlineQueryResultObject})
+		ID   string `json:"id"`
+	}{r.Result.inlineQueryResultType(), r.ID})
+	if err != nil {
+		return nil, err
+	}
+	d2, err := json.Marshal(r.Result)
+	if err != nil {
+		return nil, err
+	}
+	d[len(d)-1] = ','
+	return append(d, d2[1:]...), nil
 }
 
 // InlineQueryResultObject represents one result of an inline query.
@@ -52,8 +62,7 @@ func (InputTextMessageContent) inputMessageContent()     {}
 func (InputLocationMessageContent) inputMessageContent() {}
 func (InputVenueMessageContent) inputMessageContent()    {}
 func (InputContactMessageContent) inputMessageContent()  {}
-
-//func (InputInvoiceMessageContent) InputMessageContent()
+func (InputInvoiceMessageContent) inputMessageContent()  {}
 
 // InputTextMessageContent represents the content of a text message to be sent
 // as the result of an inline query.
@@ -92,9 +101,33 @@ type InputContactMessageContent struct {
 	Vcard       string `json:"vcard,omitempty"`
 }
 
+// InputInvoiceMessageContent represents the content of an invoice message to be sent
+// as the result of an inline query.
+type InputInvoiceMessageContent struct {
+	Title                     string         `json:"title"`
+	Description               string         `json:"description"`
+	Payload                   string         `json:"payload"`
+	ProviderToken             string         `json:"provider_token"`
+	Currency                  string         `json:"currency"`
+	Prices                    []LabeledPrice `json:"prices"`
+	MaxTipAmount              int            `json:"max_tip_amount,omitempty"`
+	SuggestedTipAmounts       []int          `json:"suggested_tip_amounts,omitempty"`
+	ProviderData              string         `json:"provider_data,omitempty"`
+	PhotoURL                  string         `json:"photo_url,omitempty"`
+	PhotoSize                 int            `json:"photo_size,omitempty"`
+	PhotoWidth                int            `json:"photo_width,omitempty"`
+	PhotoHeight               int            `json:"photo_height,omitempty"`
+	NeedName                  bool           `json:"need_name,omitempty"`
+	NeedPhoneNumber           bool           `json:"need_phone_number,omitempty"`
+	NeedEmail                 bool           `json:"need_email,omitempty"`
+	NeedShippingAddress       bool           `json:"need_shipping_address,omitempty"`
+	SendPhoneNumberToProvider bool           `json:"send_phone_number_to_provider,omitempty"`
+	SendEmailToProvider       bool           `json:"send_email_to_provider,omitempty"`
+	IsFlexible                bool           `json:"is_flexible,omitempty"`
+}
+
 // InlineQueryResultCachedAudio is an inline query response with cached audio.
 type InlineQueryResultCachedAudio struct {
-	ID                  string                `json:"id"`
 	AudioID             string                `json:"audio_file_id"`
 	Caption             string                `json:"caption,omitempty"`
 	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
@@ -109,11 +142,10 @@ func (InlineQueryResultCachedAudio) inlineQueryResultType() string {
 
 // InlineQueryResultCachedDocument is an inline query response with cached document.
 type InlineQueryResultCachedDocument struct {
-	ID                  string                `json:"id"`
+	Title               string                `json:"title"`
 	DocumentID          string                `json:"document_file_id"`
-	Title               string                `json:"title,omitempty"`
-	Caption             string                `json:"caption,omitempty"`
 	Description         string                `json:"description,omitempty"`
+	Caption             string                `json:"caption,omitempty"`
 	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
 	Entities            []MessageEntity       `json:"caption_entities,omitempty"`
 	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
@@ -126,7 +158,6 @@ func (InlineQueryResultCachedDocument) inlineQueryResultType() string {
 
 // InlineQueryResultCachedGIF is an inline query response with cached gif.
 type InlineQueryResultCachedGIF struct {
-	ID                  string                `json:"id"`
 	GIFID               string                `json:"gif_file_id"`
 	Title               string                `json:"title,omitempty"`
 	Caption             string                `json:"caption,omitempty"`
@@ -143,7 +174,6 @@ func (InlineQueryResultCachedGIF) inlineQueryResultType() string {
 // InlineQueryResultCachedMPEG4GIF is an inline query response with cached
 // H.264/MPEG-4 AVC video without sound gif.
 type InlineQueryResultCachedMPEG4GIF struct {
-	ID                  string                `json:"id"`
 	MPEG4FileID         string                `json:"mpeg4_file_id"`
 	Title               string                `json:"title,omitempty"`
 	Caption             string                `json:"caption,omitempty"`
@@ -159,7 +189,6 @@ func (InlineQueryResultCachedMPEG4GIF) inlineQueryResultType() string {
 
 // InlineQueryResultCachedPhoto is an inline query response with cached photo.
 type InlineQueryResultCachedPhoto struct {
-	ID                  string                `json:"id"`
 	PhotoID             string                `json:"photo_file_id"`
 	Title               string                `json:"title,omitempty"`
 	Description         string                `json:"description,omitempty"`
@@ -176,9 +205,7 @@ func (InlineQueryResultCachedPhoto) inlineQueryResultType() string {
 
 // InlineQueryResultCachedSticker is an inline query response with cached sticker.
 type InlineQueryResultCachedSticker struct {
-	ID                  string                `json:"id"`
 	StickerID           string                `json:"sticker_file_id"`
-	Title               string                `json:"title"`
 	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
 }
@@ -189,7 +216,6 @@ func (InlineQueryResultCachedSticker) inlineQueryResultType() string {
 
 // InlineQueryResultCachedVideo is an inline query response with cached video.
 type InlineQueryResultCachedVideo struct {
-	ID                  string                `json:"id"`
 	VideoID             string                `json:"video_file_id"`
 	Title               string                `json:"title"`
 	Description         string                `json:"description,omitempty"`
@@ -206,7 +232,6 @@ func (InlineQueryResultCachedVideo) inlineQueryResultType() string {
 
 // InlineQueryResultCachedVoice is an inline query response with cached voice.
 type InlineQueryResultCachedVoice struct {
-	ID                  string                `json:"id"`
 	VoiceID             string                `json:"voice_file_id"`
 	Title               string                `json:"title"`
 	Caption             string                `json:"caption,omitempty"`
@@ -222,9 +247,8 @@ func (InlineQueryResultCachedVoice) inlineQueryResultType() string {
 
 // InlineQueryResultArticle represents a link to an article or web page.
 type InlineQueryResultArticle struct {
-	ID                  string                `json:"id"`
 	Title               string                `json:"title"`
-	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent   `json:"input_message_content"`
 	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 	URL                 string                `json:"url,omitempty"`
 	HideURL             bool                  `json:"hide_url,omitempty"`
@@ -240,7 +264,6 @@ func (InlineQueryResultArticle) inlineQueryResultType() string {
 
 // InlineQueryResultAudio is an inline query response audio.
 type InlineQueryResultAudio struct {
-	ID                  string                `json:"id"`
 	URL                 string                `json:"audio_url"`
 	Title               string                `json:"title"`
 	Caption             string                `json:"caption,omitempty"`
@@ -258,7 +281,6 @@ func (InlineQueryResultAudio) inlineQueryResultType() string {
 
 // InlineQueryResultContact is an inline query response contact.
 type InlineQueryResultContact struct {
-	ID                  string                `json:"id"`
 	PhoneNumber         string                `json:"phone_number"`
 	FirstName           string                `json:"first_name"`
 	LastName            string                `json:"last_name,omitempty"`
@@ -276,7 +298,6 @@ func (InlineQueryResultContact) inlineQueryResultType() string {
 
 // InlineQueryResultGame is an inline query response game.
 type InlineQueryResultGame struct {
-	ID            string                `json:"id"`
 	GameShortName string                `json:"game_short_name"`
 	ReplyMarkup   *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
@@ -287,13 +308,12 @@ func (InlineQueryResultGame) inlineQueryResultType() string {
 
 // InlineQueryResultDocument is an inline query response document.
 type InlineQueryResultDocument struct {
-	ID                  string                `json:"id"`
 	Title               string                `json:"title"`
+	URL                 string                `json:"document_url"`
+	MimeType            string                `json:"mime_type"`
 	Caption             string                `json:"caption,omitempty"`
 	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
 	Entities            []MessageEntity       `json:"caption_entities,omitempty"`
-	URL                 string                `json:"document_url"`
-	MimeType            string                `json:"mime_type"`
 	Description         string                `json:"description,omitempty"`
 	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
@@ -308,7 +328,6 @@ func (InlineQueryResultDocument) inlineQueryResultType() string {
 
 // InlineQueryResultGIF is an inline query response GIF.
 type InlineQueryResultGIF struct {
-	ID                  string                `json:"id"`
 	URL                 string                `json:"gif_url"`
 	ThumbnailURL        string                `json:"thumb_url"`
 	Width               int                   `json:"gif_width,omitempty"`
@@ -329,7 +348,6 @@ func (InlineQueryResultGIF) inlineQueryResultType() string {
 
 // InlineQueryResultLocation is an inline query response location.
 type InlineQueryResultLocation struct {
-	ID string `json:"id"`
 	Location
 	Title               string                `json:"title"`
 	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
@@ -345,12 +363,11 @@ func (InlineQueryResultLocation) inlineQueryResultType() string {
 
 // InlineQueryResultMPEG4GIF is an inline query response MPEG4 GIF.
 type InlineQueryResultMPEG4GIF struct {
-	ID                  string                `json:"id"`
 	URL                 string                `json:"mpeg4_url"`
-	Width               int                   `json:"mpeg4_width"`
-	Height              int                   `json:"mpeg4_height"`
-	Duration            int                   `json:"mpeg4_duration"`
-	ThumbURL            string                `json:"thumb_url"`
+	ThumbnailURL        string                `json:"thumb_url"`
+	Width               int                   `json:"mpeg4_width,omitempty"`
+	Height              int                   `json:"mpeg4_height,omitempty"`
+	Duration            int                   `json:"mpeg4_duration,omitempty"`
 	Title               string                `json:"title,omitempty"`
 	Caption             string                `json:"caption,omitempty"`
 	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
@@ -365,11 +382,10 @@ func (InlineQueryResultMPEG4GIF) inlineQueryResultType() string {
 
 // InlineQueryResultPhoto is an inline query response photo.
 type InlineQueryResultPhoto struct {
-	ID                  string                `json:"id"`
 	URL                 string                `json:"photo_url"`
+	ThumbnailURL        string                `json:"thumb_url"`
 	Width               int                   `json:"photo_width,omitempty"`
 	Height              int                   `json:"photo_height,omitempty"`
-	ThumbURL            string                `json:"thumb_url,omitempty"`
 	Title               string                `json:"title,omitempty"`
 	Description         string                `json:"description,omitempty"`
 	Caption             string                `json:"caption,omitempty"`
@@ -385,8 +401,14 @@ func (InlineQueryResultPhoto) inlineQueryResultType() string {
 
 // InlineQueryResultVenue is an inline query response venue.
 type InlineQueryResultVenue struct {
-	ID string `json:"id"`
-	InputVenueMessageContent
+	Lat                 float32               `json:"latitude"`
+	Long                float32               `json:"longitude"`
+	Title               string                `json:"title"`
+	Address             string                `json:"address"`
+	FoursquareID        string                `json:"foursquare_id,omitempty"`
+	FoursquareType      string                `json:"foursquare_type,omitempty"`
+	GooglePlaceID       string                `json:"google_place_id,omitempty"`
+	GooglePlaceType     string                `json:"google_place_type,omitempty"`
 	ReplyMarkup         *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 	InputMessageContent InputMessageContent   `json:"input_message_content,omitempty"`
 	ThumbnailURL        string                `json:"thumb_url,omitempty"`
@@ -400,10 +422,9 @@ func (InlineQueryResultVenue) inlineQueryResultType() string {
 
 // InlineQueryResultVideo is an inline query response video.
 type InlineQueryResultVideo struct {
-	ID                  string                `json:"id"`
 	URL                 string                `json:"video_url"`
 	MimeType            string                `json:"mime_type"`
-	ThumbURL            string                `json:"thumb_url,omitempty"`
+	ThumbnailURL        string                `json:"thumb_url"`
 	Title               string                `json:"title"`
 	Caption             string                `json:"caption,omitempty"`
 	ParseMode           ParseMode             `json:"parse_mode,omitempty"`
@@ -422,7 +443,6 @@ func (InlineQueryResultVideo) inlineQueryResultType() string {
 
 // InlineQueryResultVoice is an inline query response voice.
 type InlineQueryResultVoice struct {
-	ID                  string                `json:"id"`
 	URL                 string                `json:"voice_url"`
 	Title               string                `json:"title"`
 	Caption             string                `json:"caption,omitempty"`

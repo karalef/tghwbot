@@ -30,7 +30,6 @@ func (c *InlineContext) caller() string {
 // InlineAnswer represents answer to inline query.
 type InlineAnswer struct {
 	Results           []tg.InlineQueryResult
-	CacheTime         int
 	IsPersonal        bool
 	NextOffset        string
 	SwitchPMText      string
@@ -38,10 +37,12 @@ type InlineAnswer struct {
 }
 
 // Answer answers to inline query.
-func (c *InlineContext) Answer(answer *InlineAnswer) {
+func (c *InlineContext) Answer(answer *InlineAnswer, cacheTime ...uint) {
 	p := params{}.set("inline_query_id", c.inlineQueryID)
 	p.set("results", answer.Results)
-	p.set("cache_time", answer.CacheTime)
+	if len(cacheTime) > 0 {
+		p.set("cache_time", cacheTime[0])
+	}
 	p.set("is_personal", answer.IsPersonal)
 	p.set("next_offset", answer.NextOffset)
 	p.set("switch_pm_text", answer.SwitchPMText)
