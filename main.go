@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,8 +14,14 @@ import (
 	"tghwbot/modules/text"
 )
 
+var color = flag.Bool("color", false, "use colored log")
+
+func init() {
+	flag.Parse()
+}
+
 func main() {
-	log := logger.New(logger.NewWriter(os.Stderr, true), "HwBot")
+	log := logger.New(logger.NewWriter(os.Stderr, *color), "HwBot")
 	log.Info("PID: %d", os.Getpid())
 
 	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
