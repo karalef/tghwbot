@@ -123,7 +123,9 @@ func writeMultipart(p params, files []File) (string, io.Reader) {
 	r, w := io.Pipe()
 	mp := multipart.NewWriter(w)
 	go func() {
-		defer w.CloseWithError(mp.Close())
+		defer func() {
+			w.CloseWithError(mp.Close())
+		}()
 
 		err := p.forEach(mp.WriteField)
 		if err != nil {

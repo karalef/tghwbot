@@ -24,7 +24,7 @@ func New(config Config) (*Bot, error) {
 	return NewWithContext(context.Background(), config)
 }
 
-// New creates new bot with context.
+// NewWithContext creates new bot with context.
 func NewWithContext(ctx context.Context, config Config) (*Bot, error) {
 	if config.Token == "" {
 		return nil, errors.New("no token provided")

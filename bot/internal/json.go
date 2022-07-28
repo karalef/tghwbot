@@ -14,7 +14,7 @@ func DecodeJSON[T any](r io.Reader) (*T, []byte, error) {
 	if err == nil {
 		return &v, nil, nil
 	}
-	b, err := io.ReadAll(io.MultiReader(dec.Buffered(), r))
+	b, _ := io.ReadAll(io.MultiReader(dec.Buffered(), r))
 	return nil, b, err
 }
 
