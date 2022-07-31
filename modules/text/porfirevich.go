@@ -9,7 +9,7 @@ import (
 )
 
 var porfirevichClient = &http.Client{
-	Timeout: time.Second * 10,
+	Timeout: time.Second * 15,
 }
 
 func porfirevich(start string, length int) ([]string, error) {

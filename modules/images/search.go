@@ -10,6 +10,7 @@ import (
 	"tghwbot/bot"
 	"tghwbot/bot/tg"
 	"tghwbot/modules/random"
+	"unsafe"
 )
 
 var Search = bot.Command{
@@ -21,10 +22,10 @@ var Search = bot.Command{
 			ctx.Reply("Provide keywords")
 		}
 		ctx.Chat.SendChatAction(tg.ActionUploadPhoto)
-		result, err := searchImages(q)
+		result, err := searchImages(q, false)
 		if err != nil {
 			ctx.Logger().Error(err.Error())
-			ctx.Reply(errors.Unwrap(err).Error())
+			ctx.Reply(err.Error())
 		}
 		if len(result) == 0 {
 			ctx.Reply("No results")
@@ -36,23 +37,41 @@ var Search = bot.Command{
 	},
 }
 
-func searchImages(q string) ([]string, error) {
-	q = url.QueryEscape(q)
-	resp, err := http.Get("https://imsea.herokuapp.com/api/1?q=" + q)
+func searchImages(q string, safe bool) ([]string, error) {
+	vals := url.Values{
+		"q":          {q},
+		"format":     {"json"},
+		"categories": {"images"},
+		"safesearch": {"0"},
+	}
+	if safe {
+		vals.Set("safesearch", "1")
+	}
+	resp, err := http.Get("https://searx.zapashcanon.fr/search?" + vals.Encode())
 	if err != nil {
-		return nil, errors.Unwrap(err)
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
 	}
 	var res struct {
-		ImageName string   `json:"image_name"`
-		Results   []string `json:"results"`
+		Results []struct {
+			ImgSrc string `json:"img_src"`
+		} `json:"results"`
 	}
 	json.NewDecoder(resp.Body).Decode(&res)
 	resp.Body.Close()
-	return res.Results, nil
+	for i := range res.Results {
+		s := &res.Results[i].ImgSrc
+		if strings.HasPrefix(*s, "//") {
+			*s = "https:" + *s
+		}
+	}
+	return *(*[]string)(unsafe.Pointer(&res)), nil
 }
 
 func OnInline(ctx *bot.InlineContext, q *tg.InlineQuery) {
-	imgs, err := searchImages(q.Query)
+	imgs, err := searchImages(q.Query, false)
 	if len(imgs) == 0 {
 		if err != nil {
 			ctx.Logger().Error(err.Error())
