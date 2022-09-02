@@ -2,7 +2,6 @@ package images
 
 import (
 	"bytes"
-	"flag"
 	"image"
 	"image/color"
 	"image/draw"
@@ -22,51 +21,45 @@ import (
 var CitgenCmd = bot.Command{
 	Cmd:         "citgen",
 	Description: "Генерация цитаты",
-	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
+	Run: func(ctx bot.MessageContext, msg *tg.Message, args []string) error {
 		if msg.ReplyTo == nil {
-			ctx.Reply("Ответьте на сообщение")
+			return ctx.ReplyText("Ответьте на сообщение")
 		}
 		from := msg.ReplyTo.From
 		text := msg.ReplyTo.Text
 		date := msg.ReplyTo.Time()
 		caption := ""
 		if text == "" {
-			ctx.Reply("Сообщение не содержит текста")
+			return ctx.ReplyText("Сообщение не содержит текста")
 		}
 		ctx.Chat.SendChatAction(tg.ActionUploadPhoto)
 
 		log := ctx.Logger()
-		photo, err := getPhoto(ctx, from.ID, 200)
+		photo, err := getPhoto(&ctx.Context, from.ID, 200)
 		if err != nil {
 			log.Warn("citgen: %s", err.Error())
 			caption = err.Error()
 		}
 
-		config := DefaultCitgen
-		if len(args) > 0 {
-			citgenFlagSet := flag.NewFlagSet("citgen", flag.ContinueOnError)
-			citgenFlagSet.BoolVar(&config.PhotoQuad, "q", false, "")
-			citgenFlagSet.Parse(args)
-		}
 		user := from.Username
 		if user == "" || strings.ReplaceAll(user, " ", "") == "" {
 			user = from.FirstName + from.LastName
 		}
-		data, err := config.GeneratePNGReader(photo, user, text, date)
+		data, err := DefaultCitgen.GeneratePNGReader(photo, user, text, date)
 		if err != nil {
 			log.Error("citgen generate: %s", err.Error())
-			ctx.Reply(err.Error())
+			return ctx.ReplyText(err.Error())
 		}
 		p := bot.NewPhoto(tg.FileReader("citgen.png", data))
 		p.Caption = caption
-		ctx.Chat.Send(p)
+		return ctx.Send(p)
 	},
 }
 
 func getPhoto(ctx *bot.Context, from int64, minSize int) (image.Image, error) {
-	ph := ctx.GetUserPhotos(from)
-	if ph.TotalCount == 0 {
-		return nil, nil
+	ph, err := ctx.GetUserPhotos(from)
+	if err != nil || ph.TotalCount == 0 {
+		return nil, err
 	}
 
 	var fid string
@@ -80,15 +73,14 @@ func getPhoto(ctx *bot.Context, from int64, minSize int) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	i, _, err := utils.Decode(rc)
+	i, _, err := image.Decode(rc)
 	rc.Close()
 	return i, err
 }
 
 var DefaultCitgen = Citgen{
-	FontFace:  fonts.RobotoFace(20),
+	FontFace:  fonts.GoFontFace(20),
 	PhotoSize: 200,
-	PhotoQuad: false,
 	Width:     700,
 	MinHeight: 400,
 	Padding:   40,
@@ -99,7 +91,6 @@ var DefaultCitgen = Citgen{
 type Citgen struct {
 	FontFace  font.Face
 	PhotoSize int
-	PhotoQuad bool
 	Width     int
 	MinHeight int
 	Padding   int
@@ -137,11 +128,7 @@ func (c *Citgen) Generate(photo image.Image, name, quote string, t time.Time) (i
 
 	// draw photo
 	offset := image.Pt(c.Padding, c.Padding+(img.Bounds().Dy()-bottomContentPadding-c.Padding)/2-c.PhotoSize/2)
-	if c.PhotoQuad {
-		draw.Draw(img, img.Bounds().Add(offset), photo, image.ZP, draw.Over)
-	} else {
-		utils.DrawClipCircle(img, offset, photo, image.Pt(c.PhotoSize/2, c.PhotoSize/2), c.PhotoSize/2)
-	}
+	utils.DrawClipCircle(img, offset, photo, image.Pt(c.PhotoSize/2, c.PhotoSize/2), c.PhotoSize/2)
 
 	d := font.Drawer{
 		Dst:  img,
@@ -176,11 +163,12 @@ func (c *Citgen) splitLines(s string, width, minHeight int) ([]string, int) {
 	for _, line := range strings.Split(s, "\n") {
 		var newLine string
 		for _, word := range strings.Split(line, " ") {
-			if newLine != "" {
-				word = " " + word
+			if newLine == "" {
+				newLine = word
+				continue
 			}
-			if fonts.StringWidth(c.FontFace, newLine+word) <= width {
-				newLine += word
+			if fonts.StringWidth(c.FontFace, newLine+" "+word) <= width {
+				newLine += " " + word
 				continue
 			}
 			lines = append(lines, newLine)
@@ -188,7 +176,7 @@ func (c *Citgen) splitLines(s string, width, minHeight int) ([]string, int) {
 		}
 
 		if newLine != "" {
-			lines = append(lines, strings.TrimSpace(newLine))
+			lines = append(lines, newLine)
 		}
 	}
 

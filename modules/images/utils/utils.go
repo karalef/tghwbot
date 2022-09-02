@@ -3,22 +3,14 @@ package utils
 import (
 	"image"
 	"image/color"
-	_ "image/jpeg" // jpeg decoding
-	_ "image/png"  // png decoding
-	"io"
 
 	"golang.org/x/image/draw"
 )
 
-// Decode image.
-func Decode(r io.Reader) (image.Image, string, error) {
-	return image.Decode(r)
-}
-
 // Resize image.
 func Resize(src image.Image, width, height int) image.Image {
 	resized := image.NewRGBA(image.Rect(0, 0, width, height))
-	draw.NearestNeighbor.Scale(resized, resized.Rect, src, src.Bounds(), draw.Over, nil)
+	draw.ApproxBiLinear.Scale(resized, resized.Rect, src, src.Bounds(), draw.Over, nil)
 	return resized
 }
 
@@ -37,9 +29,8 @@ func Crop(img image.Image, rect image.Rectangle) image.Image {
 
 // CropCopy creates copy of image part.
 func CropCopy(img image.Image, rect image.Rectangle) image.Image {
-	rect = rect.Intersect(img.Bounds())
 	rgbaImg := &image.RGBA{}
-	if !rect.Empty() {
+	if rect = rect.Intersect(img.Bounds()); !rect.Empty() {
 		rgbaImg = image.NewRGBA(rect)
 		for y := rect.Min.Y; y < rect.Max.Y; y++ {
 			for x := rect.Min.X; x < rect.Max.X; x++ {

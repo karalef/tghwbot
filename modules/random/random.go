@@ -27,7 +27,7 @@ func RandP(max int, power float64) int {
 var Number = bot.Command{
 	Cmd:         "rand",
 	Description: "random number",
-	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
+	Run: func(ctx bot.MessageContext, msg *tg.Message, args []string) error {
 		var max int64 = 100
 		var offset int64 = 0
 		if len(args) > 0 {
@@ -36,42 +36,55 @@ var Number = bot.Command{
 			if i := strings.IndexByte(num, '-'); i > 0 && i < len(num)-1 {
 				offset, err = strconv.ParseInt(num[:i], 10, 64)
 				if err != nil || offset < 0 {
-					ctx.Reply("Specify the numbers in range 0 - MaxInt64")
+					return ctx.ReplyText("Specify the numbers in range 0 - MaxInt64")
 				}
 				num = num[i+1:]
 			}
 			max, err = strconv.ParseInt(num, 10, 64)
 			if err != nil || max <= 0 {
-				ctx.Reply("Specify the number in range 1 - MaxInt64")
+				return ctx.ReplyText("Specify the number in range 1 - MaxInt64")
 			}
 		}
 		max -= offset
-		ctx.Reply(strconv.FormatInt(offset+myRand.Int63n(max), 10))
+		return ctx.ReplyText(strconv.FormatInt(offset+myRand.Int63n(max), 10))
+	},
+}
+
+var dices = [...]tg.DiceEmoji{
+	tg.DiceCube, tg.DiceDart, tg.DiceBall,
+	tg.DiceGoal, tg.DiceSlot, tg.DiceBowl,
+}
+
+var Roll = bot.Command{
+	Cmd:         "roll",
+	Description: "roll random telegram dice",
+	Run: func(ctx bot.MessageContext, _ *tg.Message, _ []string) error {
+		return ctx.Reply(bot.Dice(dices[RandInt(len(dices))]))
 	},
 }
 
 var Info = bot.Command{
 	Cmd:         "info",
 	Description: "event probability",
-	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
+	Run: func(ctx bot.MessageContext, msg *tg.Message, args []string) error {
 		if len(args) == 0 {
-			ctx.Reply("Specify the event")
+			return ctx.ReplyText("Specify the event")
 		}
 		p := myRand.Intn(101)
 		e := strings.Join(args, " ")
-		ctx.Reply("The probability that " + e + " — " + strconv.Itoa(p) + "%")
+		return ctx.ReplyText("The probability that " + e + " — " + strconv.Itoa(p) + "%")
 	},
 }
 
 var When = bot.Command{
 	Cmd:         "when",
 	Description: "random date of event",
-	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
+	Run: func(ctx bot.MessageContext, msg *tg.Message, args []string) error {
 		if len(args) == 0 {
-			ctx.Reply("Provide the event")
+			return ctx.ReplyText("Provide the event")
 		}
 		t := time.Now().AddDate(RandP(51, 1.5), RandInt(12), RandInt(31))
 		e := strings.Join(args, " ")
-		ctx.Reply(e + " " + t.Format("02 Jan 2006"))
+		return ctx.ReplyText(e + " " + t.Format("02 Jan 2006"))
 	},
 }

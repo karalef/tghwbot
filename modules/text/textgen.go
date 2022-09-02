@@ -12,10 +12,10 @@ var textgenMut sync.Mutex
 var Gen = bot.Command{
 	Cmd:         "textgen",
 	Description: "text generation",
-	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
+	Run: func(ctx bot.MessageContext, msg *tg.Message, args []string) error {
 		query := strings.Join(args, " ")
 		if query == "" {
-			ctx.Reply("Think of the beginning of the story")
+			return ctx.ReplyText("Think of the beginning of the story")
 		}
 
 		textgenMut.Lock()
@@ -24,13 +24,13 @@ var Gen = bot.Command{
 		replies, err := porfirevich(query, 30)
 		if err != nil {
 			ctx.Logger().Error(err.Error())
-			ctx.Reply(err.Error())
+			return ctx.ReplyText(err.Error())
 		}
 
 		var text string
 		for _, r := range replies {
 			text += query + r + "\n\n"
 		}
-		ctx.Reply(text)
+		return ctx.ReplyText(text)
 	},
 }

@@ -16,41 +16,46 @@ import (
 var Search = bot.Command{
 	Cmd:         "img",
 	Description: "random image",
-	Run: func(ctx *bot.Context, _ *tg.Message, args []string) {
+	Run: func(ctx bot.MessageContext, _ *tg.Message, args []string) error {
 		q := strings.Join(args, " ")
 		if q == "" {
-			ctx.Reply("Provide keywords")
+			return ctx.ReplyText("Provide keywords")
 		}
 		ctx.Chat.SendChatAction(tg.ActionUploadPhoto)
 		result, err := searchImages(q, false)
 		if err != nil {
 			ctx.Logger().Error(err.Error())
-			ctx.Reply(err.Error())
+			return ctx.ReplyText(err.Error())
 		}
 		if len(result) == 0 {
-			ctx.Reply("No results")
+			return ctx.ReplyText("No results")
 		}
 		u := result[random.RandP(len(result), 1.5)]
 		p := bot.NewPhoto(tg.FileURL(u))
 		p.Caption = q
-		ctx.Chat.Send(p)
+		return ctx.Reply(p)
 	},
 }
+
+/*
+"https://searx.prvcy.eu/search?",
+"https://search.unlocked.link/search?",
+"https://search.sapti.me/search?",
+"https://searx.zapashcanon.fr/search?",
+*/
 
 func searchImages(q string, safe bool) ([]string, error) {
 	vals := url.Values{
 		"q":          {q},
 		"format":     {"json"},
 		"categories": {"images"},
-		"safesearch": {"0"},
+		"safesearch": {fmtBool(safe)},
 	}
-	if safe {
-		vals.Set("safesearch", "1")
-	}
-	resp, err := http.Get("https://searx.zapashcanon.fr/search?" + vals.Encode())
+	resp, err := http.Get("https://searx.prvcy.eu/search?" + vals.Encode())
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(resp.Status)
 	}
@@ -60,7 +65,6 @@ func searchImages(q string, safe bool) ([]string, error) {
 		} `json:"results"`
 	}
 	json.NewDecoder(resp.Body).Decode(&res)
-	resp.Body.Close()
 	for i := range res.Results {
 		s := &res.Results[i].ImgSrc
 		if strings.HasPrefix(*s, "//") {
@@ -70,13 +74,22 @@ func searchImages(q string, safe bool) ([]string, error) {
 	return *(*[]string)(unsafe.Pointer(&res)), nil
 }
 
-func OnInline(ctx *bot.InlineContext, q *tg.InlineQuery) {
+func fmtBool(b bool) string {
+	if b {
+		return "1"
+	}
+	return "0"
+}
+
+var cacheTime = 60
+
+func OnInline(ctx bot.QueryContext[bot.InlineAnswer], q *tg.InlineQuery) {
 	imgs, err := searchImages(q.Query, false)
 	if len(imgs) == 0 {
 		if err != nil {
 			ctx.Logger().Error(err.Error())
 		}
-		ctx.Answer(&bot.InlineAnswer{})
+		ctx.Answer(bot.InlineAnswer{})
 	}
 
 	n := len(imgs)
@@ -84,17 +97,21 @@ func OnInline(ctx *bot.InlineContext, q *tg.InlineQuery) {
 		n = 10
 	}
 
-	results := make([]tg.InlineQueryResult, n)
+	answer := bot.InlineAnswer{
+		Results:   make([]tg.InlineQueryResulter, n),
+		CacheTime: &cacheTime,
+	}
+
 	for i := 0; i < n; i++ {
-		results[i].ID = strconv.Itoa(i)
-		results[i].Result = tg.InlineQueryResultPhoto{
-			URL:          imgs[i],
-			ThumbnailURL: imgs[i],
-			Caption:      q.Query,
+		answer.Results[i] = tg.InlineQueryResult[tg.InlineQueryResultPhoto]{
+			ID: strconv.Itoa(i),
+			Result: tg.InlineQueryResultPhoto{
+				URL:          imgs[i],
+				ThumbnailURL: imgs[i],
+				Caption:      q.Query,
+			},
 		}
 	}
 
-	ctx.Answer(&bot.InlineAnswer{
-		Results: results,
-	}, 60)
+	ctx.Answer(answer)
 }

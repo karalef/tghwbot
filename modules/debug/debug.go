@@ -7,7 +7,6 @@ import (
 	"tghwbot/bot"
 	"tghwbot/bot/tg"
 	"tghwbot/common/format"
-	"tghwbot/common/rt"
 	"time"
 )
 
@@ -22,7 +21,7 @@ var DebugCmd = bot.Command{
 			Consts: []string{"gc"},
 		},
 	},
-	Run: func(ctx *bot.Context, msg *tg.Message, args []string) {
+	Run: func(ctx bot.MessageContext, msg *tg.Message, args []string) error {
 		var out string
 		if len(args) == 0 {
 			out = stat()
@@ -34,7 +33,7 @@ var DebugCmd = bot.Command{
 				out = memStats(len(args) > 1 && args[1] == "gc")
 			}
 		}
-		ctx.Reply(out)
+		return ctx.ReplyText(out)
 	},
 }
 
@@ -55,16 +54,21 @@ func stat() string {
 }
 
 func memStats(gc bool) string {
-	ms := rt.GetMemStats(gc)
+	if gc {
+		runtime.GC()
+	}
+
+	var ms runtime.MemStats
+	runtime.ReadMemStats(&ms)
 
 	var str string
 	if gc {
-		str = fmt.Sprintf("\n\nGarbage collection is done in %dns\nTotal stop-the-world time %dns", ms.GCTime, ms.PauseTotal)
+		str = fmt.Sprintf("\n\nGarbage collection is done in %dns", ms.PauseNs[(ms.NumGC+255)%256])
 	}
 	str = fmt.Sprint(
-		"Allocated: ", format.FmtBytes(ms.Allocated, false, false),
-		"\nHeap objects: ", ms.Objects,
-		"\nHeap inuse: ", format.FmtBytes(ms.InUse, false, false),
+		"Allocated: ", format.FmtBytes(ms.Alloc, false, false),
+		"\nHeap objects: ", ms.Mallocs-ms.Frees,
+		"\nHeap inuse: ", format.FmtBytes(ms.HeapInuse, false, false),
 		"\nGoroutines: ", runtime.NumGoroutine(),
 		str)
 	return str
