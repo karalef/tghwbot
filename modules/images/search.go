@@ -22,7 +22,7 @@ var Search = bot.Command{
 			return ctx.ReplyText("Provide keywords")
 		}
 		ctx.Chat.SendChatAction(tg.ActionUploadPhoto)
-		result, err := searchImages(q, false)
+		result, err := searchImages(q, true)
 		if err != nil {
 			ctx.Logger().Error(err.Error())
 			return ctx.ReplyText(err.Error())
@@ -51,7 +51,7 @@ func searchImages(q string, safe bool) ([]string, error) {
 		"categories": {"images"},
 		"safesearch": {fmtBool(safe)},
 	}
-	resp, err := http.Get("https://searx.prvcy.eu/search?" + vals.Encode())
+	resp, err := http.Get("https://searx.zapashcanon.fr/search?" + vals.Encode())
 	if err != nil {
 		return nil, err
 	}
