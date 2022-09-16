@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"tghwbot/bot"
 	"tghwbot/bot/logger"
+	"tghwbot/modules"
 	"tghwbot/modules/debug"
 	"tghwbot/modules/images"
 	"tghwbot/modules/random"
@@ -40,11 +41,13 @@ func main() {
 			&random.Roll,
 			&random.When,
 			&text.Gen,
+			&text.Balaboba,
 			&images.CitgenCmd,
 			&images.Search,
 		},
 		Handler: bot.Handler{
-			OnInlineQuery: images.OnInline,
+			OnInlineQuery:   images.OnInline,
+			OnCallbackQuery: modules.CallbackRouter.Route,
 		},
 	})
 	if err != nil {
