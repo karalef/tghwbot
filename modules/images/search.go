@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"tghwbot/bot"
@@ -12,6 +13,8 @@ import (
 	"tghwbot/modules/random"
 	"unsafe"
 )
+
+var _, safeSearch = os.LookupEnv("IMG_SS")
 
 var Search = bot.Command{
 	Cmd:         "img",
@@ -22,7 +25,7 @@ var Search = bot.Command{
 			return ctx.ReplyText("Provide keywords")
 		}
 		ctx.Chat.SendChatAction(tg.ActionUploadPhoto)
-		result, err := searchImages(q, true)
+		result, err := searchImages(q, safeSearch)
 		if err != nil {
 			ctx.Logger().Error(err.Error())
 			return ctx.ReplyText(err.Error())
