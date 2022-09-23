@@ -4,16 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"runtime"
-	"tghwbot/bot"
-	"tghwbot/bot/tg"
 	"tghwbot/common/format"
 	"time"
+
+	"github.com/karalef/tgot"
+	"github.com/karalef/tgot/tg"
 )
 
-var DebugCmd = bot.Command{
+var DebugCmd = tgot.Command{
 	Cmd:         "debug",
 	Description: "debug",
-	Args: []bot.Arg{
+	Args: []tgot.Arg{
 		{
 			Consts: []string{"obj", "mem"},
 		},
@@ -21,7 +22,7 @@ var DebugCmd = bot.Command{
 			Consts: []string{"gc"},
 		},
 	},
-	Run: func(ctx bot.MessageContext, msg *tg.Message, args []string) error {
+	Run: func(ctx tgot.MessageContext, msg *tg.Message, args []string) error {
 		var out string
 		if len(args) == 0 {
 			out = stat()

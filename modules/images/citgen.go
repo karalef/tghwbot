@@ -8,20 +8,20 @@ import (
 	"image/png"
 	"io"
 	"strings"
-	"tghwbot/bot"
-	"tghwbot/bot/tg"
 	"tghwbot/modules/images/fonts"
 	"tghwbot/modules/images/utils"
 	"time"
 
+	"github.com/karalef/tgot"
+	"github.com/karalef/tgot/tg"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
 
-var CitgenCmd = bot.Command{
+var CitgenCmd = tgot.Command{
 	Cmd:         "citgen",
 	Description: "Генерация цитаты",
-	Run: func(ctx bot.MessageContext, msg *tg.Message, args []string) error {
+	Run: func(ctx tgot.MessageContext, msg *tg.Message, args []string) error {
 		if msg.ReplyTo == nil {
 			return ctx.ReplyText("Ответьте на сообщение")
 		}
@@ -50,13 +50,13 @@ var CitgenCmd = bot.Command{
 			log.Error("citgen generate: %s", err.Error())
 			return ctx.ReplyText(err.Error())
 		}
-		p := bot.NewPhoto(tg.FileReader("citgen.png", data))
+		p := tgot.NewPhoto(tg.FileReader("citgen.png", data))
 		p.Caption = caption
 		return ctx.Send(p)
 	},
 }
 
-func getPhoto(ctx *bot.Context, from int64, minSize int) (image.Image, error) {
+func getPhoto(ctx *tgot.Context, from int64, minSize int) (image.Image, error) {
 	ph, err := ctx.GetUserPhotos(from)
 	if err != nil || ph.TotalCount == 0 {
 		return nil, err

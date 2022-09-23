@@ -5,9 +5,10 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
-	"tghwbot/bot"
-	"tghwbot/bot/tg"
 	"time"
+
+	"github.com/karalef/tgot"
+	"github.com/karalef/tgot/tg"
 )
 
 var myRand = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -24,10 +25,10 @@ func RandP(max int, power float64) int {
 	return int(math.Floor(float64(max) * math.Pow(r, power)))
 }
 
-var Number = bot.Command{
+var Number = tgot.Command{
 	Cmd:         "rand",
 	Description: "random number",
-	Run: func(ctx bot.MessageContext, msg *tg.Message, args []string) error {
+	Run: func(ctx tgot.MessageContext, msg *tg.Message, args []string) error {
 		var max int64 = 100
 		var offset int64 = 0
 		if len(args) > 0 {
@@ -55,18 +56,18 @@ var dices = [...]tg.DiceEmoji{
 	tg.DiceGoal, tg.DiceSlot, tg.DiceBowl,
 }
 
-var Roll = bot.Command{
+var Roll = tgot.Command{
 	Cmd:         "roll",
 	Description: "roll random telegram dice",
-	Run: func(ctx bot.MessageContext, _ *tg.Message, _ []string) error {
-		return ctx.Reply(bot.Dice(dices[RandInt(len(dices))]))
+	Run: func(ctx tgot.MessageContext, _ *tg.Message, _ []string) error {
+		return ctx.Reply(tgot.Dice(dices[RandInt(len(dices))]))
 	},
 }
 
-var Info = bot.Command{
+var Info = tgot.Command{
 	Cmd:         "info",
 	Description: "event probability",
-	Run: func(ctx bot.MessageContext, msg *tg.Message, args []string) error {
+	Run: func(ctx tgot.MessageContext, msg *tg.Message, args []string) error {
 		if len(args) == 0 {
 			return ctx.ReplyText("Specify the event")
 		}
@@ -76,10 +77,10 @@ var Info = bot.Command{
 	},
 }
 
-var When = bot.Command{
+var When = tgot.Command{
 	Cmd:         "when",
 	Description: "random date of event",
-	Run: func(ctx bot.MessageContext, msg *tg.Message, args []string) error {
+	Run: func(ctx tgot.MessageContext, msg *tg.Message, args []string) error {
 		if len(args) == 0 {
 			return ctx.ReplyText("Provide the event")
 		}

@@ -6,14 +6,15 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"tghwbot/bot"
-	"tghwbot/bot/logger"
 	"tghwbot/modules"
 	"tghwbot/modules/debug"
 	"tghwbot/modules/images"
 	"tghwbot/modules/random"
 	"tghwbot/modules/text"
 	"time"
+
+	"github.com/karalef/tgot"
+	"github.com/karalef/tgot/logger"
 )
 
 var color = flag.Bool("color", false, "use colored log")
@@ -31,21 +32,21 @@ func main() {
 	log := logger.Default("HwBot", *color)
 	log.Info("PID: %d", os.Getpid())
 
-	b, err := bot.New(os.Getenv("TOKEN"), bot.Config{
+	b, err := tgot.New(os.Getenv("TOKEN"), tgot.Config{
 		Logger:   log,
 		MakeHelp: true,
-		Commands: []*bot.Command{
+		Commands: []*tgot.Command{
 			&debug.DebugCmd,
 			&random.Info,
 			&random.Number,
 			&random.Roll,
 			&random.When,
 			&text.Gen,
-			&text.Balaboba,
+			&text.BalabobaCmd,
 			&images.CitgenCmd,
 			&images.Search,
 		},
-		Handler: bot.Handler{
+		Handler: tgot.Handler{
 			OnInlineQuery:   images.OnInline,
 			OnCallbackQuery: modules.CallbackRouter.Route,
 		},
@@ -53,6 +54,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	modules.API = b.MakeContext("modules")
+	text.InitBalaboba()
 
 	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	err = b.RunContext(ctx)
