@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 	"tghwbot/modules"
+	"tghwbot/queue"
 	"time"
 
 	"github.com/karalef/balaboba"
@@ -17,10 +18,9 @@ var bb *Balaboba
 func InitBalaboba() {
 	bb = &Balaboba{
 		client: balaboba.ClientRus,
-		queue:  make(chan balabobaRequest, 20),
 		api:    modules.API.Child("balaboba"),
 	}
-	go bb.listen()
+	bb.queue = queue.New(bb.complete)
 }
 
 var BalabobaCmd = tgot.Command{
@@ -52,7 +52,7 @@ const requestTimeout = time.Minute
 type Balaboba struct {
 	client *balaboba.Client
 	mut    sync.Mutex
-	queue  chan balabobaRequest
+	queue  *queue.Queue[balabobaRequest]
 
 	api tgot.Context
 }
@@ -66,25 +66,13 @@ func (b *Balaboba) Reg(sig tgot.MessageSignature, from int64, query string) {
 	})
 }
 
-func (b *Balaboba) listen() {
-	for {
-		select {
-		case r, ok := <-b.queue:
-			if !ok {
-				return
-			}
-			b.complete(r)
-		}
-	}
-}
-
 func (b *Balaboba) complete(req balabobaRequest) {
 	edit := func(text string) {
-		_, err := bb.api.EditText(req.sig, tgot.EditText{Text: text}, tg.InlineKeyboardMarkup{
+		_, err := b.api.EditText(req.sig, tgot.EditText{Text: text}, tg.InlineKeyboardMarkup{
 			Keyboard: make([][]tg.InlineKeyboardButton, 0),
 		})
 		if err != nil {
-			bb.api.Logger().Error(err.Error())
+			b.api.Logger().Error(err.Error())
 		}
 	}
 	b.mut.Lock()
@@ -94,7 +82,7 @@ func (b *Balaboba) complete(req balabobaRequest) {
 	resp, err := b.client.Generate(req.query, req.style)
 	if err != nil {
 		text = "Generation error"
-		bb.api.Logger().Error(err.Error())
+		b.api.Logger().Error(err.Error())
 	} else {
 		text = resp.Text
 	}
@@ -118,7 +106,7 @@ func (r *balabobaRequest) Handle(ctx tgot.Context, q *tg.CallbackQuery) (tgot.Ca
 		return tgot.CallbackAnswer{}, false, nil
 	}
 	var err error
-	if len(bb.queue) == 0 {
+	if bb.queue.Len() > 0 {
 		_, err = ctx.EditText(ctx.CallbackSignature(q), tgot.EditText{
 			Text: "request is added to the queue",
 		}, tg.InlineKeyboardMarkup{
@@ -128,7 +116,7 @@ func (r *balabobaRequest) Handle(ctx tgot.Context, q *tg.CallbackQuery) (tgot.Ca
 
 	u, _ := strconv.ParseUint(q.Data, 10, 8)
 	r.style = balaboba.Style(u)
-	bb.queue <- *r
+	bb.queue.Push(*r)
 
 	return tgot.CallbackAnswer{}, true, err
 }

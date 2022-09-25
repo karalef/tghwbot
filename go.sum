@@ -4,6 +4,10 @@ github.com/karalef/balaboba v0.0.0-20220920173959-7e9a07b058c8 h1:SF59J6f+O0RPq0
 github.com/karalef/balaboba v0.0.0-20220920173959-7e9a07b058c8/go.mod h1:bsHbZtRZmLs5gbNqz+ppxT2bBlaqp7/h0q9i7qBz2po=
 github.com/karalef/tgot v0.0.0-20220923155345-8923e0277fd5 h1:3dB1XG4F29hlvhlvKfjD/T+9BLlLIjkCztsVqPvpCdc=
 github.com/karalef/tgot v0.0.0-20220923155345-8923e0277fd5/go.mod h1:u9PQNBivl/hO4vLqKHza4nybB17rV9KCMXUGsPKxSKA=
+github.com/karalef/tgot v0.0.0-20220925170059-a1abb01e6daf h1:dSLubZmaP4HVKri3hnaeM5Ni3OsZ1ioUagklPuAuGmM=
+github.com/karalef/tgot v0.0.0-20220925170059-a1abb01e6daf/go.mod h1:u9PQNBivl/hO4vLqKHza4nybB17rV9KCMXUGsPKxSKA=
+github.com/karalef/tgot v0.0.0-20220925174501-3e28abefb0bf h1:H1Xw73tvnwmo2Lt/Ow8SlBPEHtp6UvI3bIyhjx6q2ik=
+github.com/karalef/tgot v0.0.0-20220925174501-3e28abefb0bf/go.mod h1:u9PQNBivl/hO4vLqKHza4nybB17rV9KCMXUGsPKxSKA=
 golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9 h1:LRtI4W37N+KFebI/qV0OFiLUv4GLOWeEW5hn/KEJvxE=
 golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9/go.mod h1:023OzeP/+EPmXeapQh35lcL3II3LrY8Ic+EFFKVhULM=
 golang.org/x/text v0.3.6/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=

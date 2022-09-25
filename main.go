@@ -45,6 +45,7 @@ func main() {
 			&text.BalabobaCmd,
 			&images.CitgenCmd,
 			&images.Search,
+			&images.CraiyonCmd,
 		},
 		Handler: tgot.Handler{
 			OnInlineQuery:   images.OnInline,
@@ -57,6 +58,7 @@ func main() {
 
 	modules.API = b.MakeContext("modules")
 	text.InitBalaboba()
+	images.InitCraiyon()
 
 	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	err = b.RunContext(ctx)
