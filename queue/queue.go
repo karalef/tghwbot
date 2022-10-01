@@ -1,31 +1,39 @@
 package queue
 
 // New creates new queue.
-func New[T any](worker func(T)) *Queue[T] {
-	if worker == nil {
+// count is the maximum number of concurrently running workers.
+func New[T any](worker func(T), count ...int) *Queue[T] {
+	c := 1
+	if len(count) > 0 {
+		c = count[0]
+	}
+	if worker == nil || c < 1 {
 		return nil
 	}
 	q := Queue[T]{
 		push: make(chan T),
-		out:  make(chan T),
+		pool: make(chan func(T), c),
 		buf:  new(fifo[T]),
-		do:   worker,
+	}
+	for i := 0; i < c; i++ {
+		q.pool <- worker
 	}
 	go q.buffer()
-	go q.listen()
 	return &q
 }
 
 // Queue starts the worker for each value sent to Push.
 type Queue[T any] struct {
 	push chan T
-	out  chan T
+	pool chan func(T)
 	buf  *fifo[T]
-	do   func(T)
 }
 
-func (q *Queue[T]) Push(v T) {
+// Push pushes the value to the queue and returns true if the value passed to the handler without waiting.
+func (q *Queue[T]) Push(v T) bool {
+	a := cap(q.pool)-len(q.pool) > 0
 	q.push <- v
+	return a
 }
 
 func (q *Queue[T]) Len() int {
@@ -36,40 +44,30 @@ func (q *Queue[T]) Close() {
 	close(q.push)
 }
 
-func (q *Queue[T]) listen() {
-	for {
-		r, ok := <-q.out
-		if !ok {
-			return
-		}
-		q.do(r)
-	}
-}
-
 func (q *Queue[T]) buffer() {
-	in := q.push
-	var out chan T
+	var pool chan func(T)
 	var val T
-
-	for in != nil || out != nil {
+	for {
 		select {
-		case elem, ok := <-in:
+		case elem, ok := <-q.push:
 			if !ok {
-				in = nil
-				break
+				close(q.pool)
+				return
 			}
 			q.buf.push(elem)
-		case out <- val:
+		case worker := <-pool:
+			go func() {
+				worker(val)
+				q.pool <- worker
+			}()
 			q.buf.remove()
 		}
 
 		if q.buf.len() == 0 {
-			out = nil
+			pool = nil
 			continue
 		}
-		out = q.out
+		pool = q.pool
 		val = q.buf.peek()
 	}
-
-	close(q.out)
 }

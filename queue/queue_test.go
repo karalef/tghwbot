@@ -10,19 +10,19 @@ func TestQueue(t *testing.T) {
 	var wg sync.WaitGroup
 	q := New(func(int) {
 		wg.Done()
-	})
+	}, 10)
 	wg.Add(1000)
 	go func() {
 		for i := 0; i < 1000; i++ {
 			q.Push(i)
 		}
-		q.Close()
 	}()
+	wg.Wait()
 
 	c := make(chan struct{})
 	go func() {
 		defer close(c)
-		wg.Wait()
+
 	}()
 	select {
 	case <-c:

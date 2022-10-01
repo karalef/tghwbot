@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"tghwbot/modules"
 	"tghwbot/queue"
 	"time"
@@ -36,7 +35,7 @@ func InitCraiyon() {
 		},
 		api: modules.API.Child("craiyon"),
 	}
-	craiyon.queue = queue.New(craiyon.complete)
+	craiyon.queue = queue.New(craiyon.complete, 5)
 }
 
 var CraiyonCmd = tgot.Command{
@@ -53,56 +52,41 @@ var CraiyonCmd = tgot.Command{
 		if len(prompt) == 0 {
 			return ctx.ReplyText("write a prompt")
 		}
-		sent, err := ctx.Chat.Send(tgot.NewMessage("request is added to the queue"), tgot.SendOptions[tg.ReplyMarkup]{
+		craiyon.queue.Push(craiyonRequest{
+			chat:   msg.Chat.ID,
+			orig:   msg.ID,
+			prompt: prompt,
+		})
+		_, err := ctx.Chat.Send(tgot.NewMessage("request is added to the queue"), tgot.SendOptions[tg.ReplyMarkup]{
 			BaseSendOptions: tgot.BaseSendOptions{
 				ReplyTo: msg.ID,
 			},
 		})
-		if err == nil {
-			craiyon.queue.Push(craiyonRequest{
-				sig:    ctx.MessageSignature(sent),
-				chat:   msg.Chat.ID,
-				orig:   msg.ID,
-				sent:   sent.ID,
-				prompt: prompt,
-			})
-		}
 		return err
 	},
 }
 
 type craiyonRequest struct {
-	sig    tgot.MessageSignature
 	chat   int64
 	orig   int
-	sent   int
 	prompt string
 }
 
 // Craiyon is a client for craiyon api.
 type Craiyon struct {
 	client http.Client
-	mut    sync.Mutex
 	queue  *queue.Queue[craiyonRequest]
 
 	api tgot.Context
 }
 
 func (c *Craiyon) complete(req craiyonRequest) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
-	_, err := c.api.EditText(req.sig, tgot.EditText{Text: "wait up to 2 minutes..."})
-	if err != nil {
-		c.api.Logger().Error(err.Error())
-	}
-
 	chat := c.api.OpenChat(req.chat)
 
 	imgs, err := c.Generate(req.prompt)
 	if err != nil {
 		c.api.Logger().Error(err.Error())
-		err = nil
-		chat.Send(tgot.NewMessage("Generation error"), tgot.SendOptions[tg.ReplyMarkup]{
+		_, err = chat.Send(tgot.NewMessage("Generation error"), tgot.SendOptions[tg.ReplyMarkup]{
 			BaseSendOptions: tgot.BaseSendOptions{
 				ReplyTo: req.orig,
 			},
@@ -110,6 +94,7 @@ func (c *Craiyon) complete(req craiyonRequest) {
 		if err != nil {
 			c.api.Logger().Error(err.Error())
 		}
+		return
 	}
 
 	mediaGroup := make(tgot.MediaGroup, len(imgs))
@@ -120,11 +105,6 @@ func (c *Craiyon) complete(req craiyonRequest) {
 	_, err = chat.SendMediaGroup(mediaGroup, tgot.MediaGroupSendOptions{
 		ReplyTo: req.orig,
 	})
-	if err != nil {
-		c.api.Logger().Error(err.Error())
-	}
-
-	err = chat.DeleteMessage(req.sent)
 	if err != nil {
 		c.api.Logger().Error(err.Error())
 	}
