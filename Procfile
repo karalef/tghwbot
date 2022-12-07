@@ -1,1 +1,0 @@
-worker: /app/bin/tghwbot
