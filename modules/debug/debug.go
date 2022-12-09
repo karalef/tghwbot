@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"runtime"
 	"tghwbot/common/format"
+	"tghwbot/modules"
 	"time"
 
 	"github.com/karalef/tgot"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
+	"github.com/karalef/tgot/commands"
 )
 
-var DebugCmd = tgot.Command{
+var DebugCmd = commands.Command{
 	Cmd:         "debug",
 	Description: "debug",
-	Args: []tgot.Arg{
+	Args: []commands.Arg{
 		{
 			Consts: []string{"obj", "mem"},
 		},
@@ -22,7 +24,7 @@ var DebugCmd = tgot.Command{
 			Consts: []string{"gc"},
 		},
 	},
-	Run: func(ctx tgot.MessageContext, msg *tg.Message, args []string) error {
+	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 		var out string
 		if len(args) == 0 {
 			out = stat()
@@ -34,7 +36,7 @@ var DebugCmd = tgot.Command{
 				out = memStats(len(args) > 1 && args[1] == "gc")
 			}
 		}
-		return ctx.ReplyText(out)
+		return modules.ReplyText(ctx, msg, out)
 	},
 }
 

@@ -16,7 +16,8 @@ import (
 	"time"
 
 	"github.com/karalef/tgot"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
+	"github.com/karalef/tgot/commands"
 )
 
 var craiyon *Craiyon
@@ -38,31 +39,26 @@ func InitCraiyon() {
 	craiyon.queue = queue.New(craiyon.complete, 5)
 }
 
-var CraiyonCmd = tgot.Command{
+var CraiyonCmd = commands.Command{
 	Cmd:         "dalle",
 	Description: "Craiyon, formerly DALL·E mini, is an AI model that can draw images from any text prompt!",
-	Args: []tgot.Arg{
+	Args: []commands.Arg{
 		{
 			Required: true,
 			Name:     "prompt",
 		},
 	},
-	Run: func(ctx tgot.MessageContext, msg *tg.Message, args []string) error {
+	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 		prompt := strings.Join(args, " ")
 		if len(prompt) == 0 {
-			return ctx.ReplyText("write a prompt")
+			return modules.ReplyText(ctx, msg, "write a prompt")
 		}
 		craiyon.queue.Push(craiyonRequest{
 			chat:   msg.Chat.ID,
 			orig:   msg.ID,
 			prompt: prompt,
 		})
-		_, err := ctx.Chat.Send(tgot.NewMessage("request is added to the queue"), tgot.SendOptions[tg.ReplyMarkup]{
-			BaseSendOptions: tgot.BaseSendOptions{
-				ReplyTo: msg.ID,
-			},
-		})
-		return err
+		return modules.ReplyText(ctx, msg, "request is added to the queue")
 	},
 }
 
@@ -81,16 +77,12 @@ type Craiyon struct {
 }
 
 func (c *Craiyon) complete(req craiyonRequest) {
-	chat := c.api.OpenChat(req.chat)
+	chat := c.api.OpenChat(tgot.ChatID(req.chat))
 
 	imgs, err := c.Generate(req.prompt)
 	if err != nil {
 		c.api.Logger().Error(err.Error())
-		_, err = chat.Send(tgot.NewMessage("Generation error"), tgot.SendOptions[tg.ReplyMarkup]{
-			BaseSendOptions: tgot.BaseSendOptions{
-				ReplyTo: req.orig,
-			},
-		})
+		err = modules.ReplyText(chat, &tg.Message{ID: req.orig}, "Generation error")
 		if err != nil {
 			c.api.Logger().Error(err.Error())
 		}
@@ -102,7 +94,7 @@ func (c *Craiyon) complete(req craiyonRequest) {
 		mediaGroup[i] = tg.NewInputMediaPhoto(tg.FileReader(strconv.Itoa(i), imgs[i]))
 	}
 
-	_, err = chat.SendMediaGroup(mediaGroup, tgot.MediaGroupSendOptions{
+	_, err = chat.SendMediaGroup(mediaGroup, tgot.SendOptions[*tg.NoMarkup]{
 		ReplyTo: req.orig,
 	})
 	if err != nil {

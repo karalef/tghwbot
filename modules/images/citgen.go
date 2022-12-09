@@ -8,31 +8,33 @@ import (
 	"image/png"
 	"io"
 	"strings"
+	"tghwbot/modules"
 	"tghwbot/modules/images/fonts"
 	"tghwbot/modules/images/utils"
 	"time"
 
 	"github.com/karalef/tgot"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
+	"github.com/karalef/tgot/commands"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
 
-var CitgenCmd = tgot.Command{
+var CitgenCmd = commands.Command{
 	Cmd:         "citgen",
 	Description: "Генерация цитаты",
-	Run: func(ctx tgot.MessageContext, msg *tg.Message, args []string) error {
+	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 		if msg.ReplyTo == nil {
-			return ctx.ReplyText("Ответьте на сообщение")
+			return modules.ReplyText(ctx, msg, "Ответьте на сообщение")
 		}
 		from := msg.ReplyTo.From
 		text := msg.ReplyTo.Text
 		date := msg.ReplyTo.Time()
 		caption := ""
 		if text == "" {
-			return ctx.ReplyText("Сообщение не содержит текста")
+			return modules.ReplyText(ctx, msg, "Сообщение не содержит текста")
 		}
-		ctx.Chat.SendChatAction(tg.ActionUploadPhoto)
+		ctx.SendChatAction(tg.ActionUploadPhoto)
 
 		log := ctx.Logger()
 		photo, err := getPhoto(&ctx.Context, from.ID, 200)
@@ -48,11 +50,11 @@ var CitgenCmd = tgot.Command{
 		data, err := DefaultCitgen.GeneratePNGReader(photo, user, text, date)
 		if err != nil {
 			log.Error("citgen generate: %s", err.Error())
-			return ctx.ReplyText(err.Error())
+			return modules.ReplyText(ctx, msg, err.Error())
 		}
 		p := tgot.NewPhoto(tg.FileReader("citgen.png", data))
 		p.Caption = caption
-		return ctx.Send(p)
+		return ctx.SendE(p)
 	},
 }
 

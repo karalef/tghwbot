@@ -2,9 +2,9 @@ package modules
 
 import (
 	"github.com/karalef/tgot"
-	"github.com/karalef/tgot/callbacks"
+	"github.com/karalef/tgot/router"
 )
 
 var API tgot.Context
 
-var CallbackRouter = callbacks.NewRouter()
+var CallbackRouter = router.NewCallbacks()

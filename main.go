@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"os"
 	"os/signal"
@@ -11,31 +10,50 @@ import (
 	"tghwbot/modules/images"
 	"tghwbot/modules/random"
 	"tghwbot/modules/text"
-	"time"
 
 	"github.com/karalef/tgot"
+	"github.com/karalef/tgot/api"
+	"github.com/karalef/tgot/commands"
 	"github.com/karalef/tgot/logger"
+	"github.com/karalef/tgot/updates"
 )
 
 var color = flag.Bool("color", false, "use colored log")
+var wh = flag.Bool("webservice", false, "start as webservice")
 
 func init() {
-	loc, err := time.LoadLocation(os.Getenv("LOG_TIME_ZONE"))
-	if err != nil {
-		panic(err)
-	}
-	time.Local = loc
 	flag.Parse()
 }
 
 func main() {
-	log := logger.Default("HwBot", *color)
-	log.Info("PID: %d", os.Getpid())
+	var colorConf logger.ColorConfig
+	if *color {
+		colorConf = logger.DefaultColorConfig
+	}
+	log := logger.Default("HwBot", colorConf)
+	log.Info("starting bot (PID: %d)", os.Getpid())
 
-	b, err := tgot.New(os.Getenv("TOKEN"), tgot.Config{
-		Logger:   log,
-		MakeHelp: true,
-		Commands: []*tgot.Command{
+	a, err := api.New(os.Getenv("TOKEN"), "", "", nil)
+	if err != nil {
+		log.Error("api initialization failed: %s", err.Error())
+		return
+	}
+
+	var poller updates.Poller
+	if *wh {
+		ws, err := initWebservice()
+		if err != nil {
+			log.Error(err.Error())
+			return
+		}
+		poller = ws.serv
+	} else {
+		poller = updates.NewLongPoller(30, 0, 0)
+	}
+
+	b, err := tgot.New(a, poller, tgot.Config{
+		Logger: log,
+		Commands: commands.List{
 			&debug.DebugCmd,
 			&random.Info,
 			&random.Number,
@@ -60,17 +78,18 @@ func main() {
 	text.InitBalaboba()
 	images.InitCraiyon()
 
-	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
-	err = b.RunContext(ctx)
-	if err != nil {
-		log.Error("bot finished with an error: %s", err)
-		return
-	}
+	go func() {
+		sig := make(chan os.Signal)
+		signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
+		s := <-sig
+		b.Stop()
+		log.Info("bot stopped by %s", s.String())
+	}()
 
-	select {
-	case <-ctx.Done():
-		log.Info("stopped by os signal")
-	default:
-		log.Info("stopping without error")
+	log.Info("bot started")
+	err = b.Run()
+	if err != nil {
+		log.Error("bot stopped with error: %s", err.Error())
 	}
+	log.Info("exit")
 }

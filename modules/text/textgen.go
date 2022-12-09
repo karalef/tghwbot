@@ -7,37 +7,39 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"tghwbot/modules"
 	"time"
 
 	"github.com/karalef/tgot"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
+	"github.com/karalef/tgot/commands"
 )
 
 var textgenMut sync.Mutex
 
-var Gen = tgot.Command{
+var Gen = commands.Command{
 	Cmd:         "textgen",
 	Description: "text generation",
-	Run: func(ctx tgot.MessageContext, msg *tg.Message, args []string) error {
+	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 		query := strings.Join(args, " ")
 		if query == "" {
-			return ctx.ReplyText("Think of the beginning of the story")
+			return modules.ReplyText(ctx, msg, "Think of the beginning of the story")
 		}
 
 		textgenMut.Lock()
 		defer textgenMut.Unlock()
-		ctx.Chat.SendChatAction(tg.ActionTyping)
+		ctx.SendChatAction(tg.ActionTyping)
 		replies, err := porfirevich(query, 30)
 		if err != nil {
 			ctx.Logger().Error(err.Error())
-			return ctx.ReplyText(err.Error())
+			return modules.ReplyText(ctx, msg, err.Error())
 		}
 
 		var text string
 		for _, r := range replies {
 			text += query + r + "\n\n"
 		}
-		return ctx.ReplyText(text)
+		return modules.ReplyText(ctx, msg, text)
 	},
 }
 

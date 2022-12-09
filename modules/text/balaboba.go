@@ -10,7 +10,8 @@ import (
 
 	"github.com/karalef/balaboba"
 	"github.com/karalef/tgot"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
+	"github.com/karalef/tgot/commands"
 )
 
 var bb *Balaboba
@@ -23,26 +24,24 @@ func InitBalaboba() {
 	bb.queue = queue.New(bb.complete)
 }
 
-var BalabobaCmd = tgot.Command{
+var BalabobaCmd = commands.Command{
 	Cmd:         "yalm",
 	Description: "Yandex Balaboba",
-	Run: func(ctx tgot.MessageContext, msg *tg.Message, args []string) error {
+	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 		query := strings.Join(args, " ")
 		if query == "" {
-			return ctx.ReplyText("Think of the beginning of the story")
+			return modules.ReplyText(ctx, msg, "Think of the beginning of the story")
 		}
 
-		sent, err := ctx.Chat.Send(tgot.NewMessage("Choose the generation style"), tgot.SendOptions[tg.ReplyMarkup]{
-			BaseSendOptions: tgot.BaseSendOptions{
-				ReplyTo: msg.ID,
-			},
+		sent, err := ctx.Send(tgot.NewMessage("Choose the generation style"), tgot.SendOptions[tg.ReplyMarkup]{
+			ReplyTo:     msg.ID,
 			ReplyMarkup: StylesKeyboard,
 		})
 		if err != nil {
 			return err
 		}
 
-		bb.Reg(ctx.MessageSignature(sent), msg.From.ID, query)
+		bb.Reg(tgot.MessageSignature(sent), msg.From.ID, query)
 		return nil
 	},
 }
@@ -57,7 +56,7 @@ type Balaboba struct {
 	api tgot.Context
 }
 
-func (b *Balaboba) Reg(sig tgot.MessageSignature, from int64, query string) {
+func (b *Balaboba) Reg(sig tgot.MsgSignature, from int64, query string) {
 	modules.CallbackRouter.Reg(sig, &balabobaRequest{
 		sig:     sig,
 		query:   query,
@@ -67,8 +66,9 @@ func (b *Balaboba) Reg(sig tgot.MessageSignature, from int64, query string) {
 }
 
 func (b *Balaboba) complete(req balabobaRequest) {
+	msg := b.api.OpenMessage(req.sig)
 	edit := func(text string) {
-		_, err := b.api.EditText(req.sig, tgot.EditText{Text: text}, tg.InlineKeyboardMarkup{
+		_, err := msg.EditText(tgot.EditText{Text: text}, tg.InlineKeyboardMarkup{
 			Keyboard: make([][]tg.InlineKeyboardButton, 0),
 		})
 		if err != nil {
@@ -90,7 +90,7 @@ func (b *Balaboba) complete(req balabobaRequest) {
 }
 
 type balabobaRequest struct {
-	sig     tgot.MessageSignature
+	sig     tgot.MsgSignature
 	query   string
 	style   balaboba.Style
 	user    int64
@@ -107,11 +107,15 @@ func (r *balabobaRequest) Handle(ctx tgot.Context, q *tg.CallbackQuery) (tgot.Ca
 	}
 	var err error
 	if bb.queue.Len() > 0 {
-		_, err = ctx.EditText(ctx.CallbackSignature(q), tgot.EditText{
+		msg := ctx.OpenMessage(tgot.CallbackSignature(q))
+		_, err = msg.EditText(tgot.EditText{
 			Text: "request is added to the queue",
 		}, tg.InlineKeyboardMarkup{
 			Keyboard: make([][]tg.InlineKeyboardButton, 0),
 		})
+		if err != nil {
+			return tgot.CallbackAnswer{}, true, err
+		}
 	}
 
 	u, _ := strconv.ParseUint(q.Data, 10, 8)
@@ -125,8 +129,8 @@ func (r balabobaRequest) Timeout() time.Time {
 	return r.timeout
 }
 
-func (r balabobaRequest) Close(ctx tgot.Context, sig tgot.MessageSignature) error {
-	_, err := ctx.EditText(sig, tgot.EditText{Text: "request timeout"}, tg.InlineKeyboardMarkup{
+func (r balabobaRequest) Close(ctx tgot.Context, sig tgot.MsgSignature) error {
+	_, err := ctx.OpenMessage(sig).EditText(tgot.EditText{Text: "request timeout"}, tg.InlineKeyboardMarkup{
 		Keyboard: make([][]tg.InlineKeyboardButton, 0),
 	})
 	return err

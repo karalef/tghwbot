@@ -8,36 +8,38 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"tghwbot/modules"
 	"tghwbot/modules/random"
 	"unsafe"
 
 	"github.com/karalef/tgot"
-	"github.com/karalef/tgot/tg"
+	"github.com/karalef/tgot/api/tg"
+	"github.com/karalef/tgot/commands"
 )
 
 var _, safeSearch = os.LookupEnv("IMG_SS")
 
-var Search = tgot.Command{
+var Search = commands.Command{
 	Cmd:         "img",
 	Description: "random image",
-	Run: func(ctx tgot.MessageContext, _ *tg.Message, args []string) error {
+	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 		q := strings.Join(args, " ")
 		if q == "" {
-			return ctx.ReplyText("Provide keywords")
+			return modules.ReplyText(ctx, msg, "Provide keywords")
 		}
-		ctx.Chat.SendChatAction(tg.ActionUploadPhoto)
+		ctx.SendChatAction(tg.ActionUploadPhoto)
 		result, err := searchImages(q, safeSearch)
 		if err != nil {
 			ctx.Logger().Error(err.Error())
-			return ctx.ReplyText(err.Error())
+			return modules.ReplyText(ctx, msg, err.Error())
 		}
 		if len(result) == 0 {
-			return ctx.ReplyText("No results")
+			return modules.ReplyText(ctx, msg, "No results")
 		}
 		u := result[random.RandP(len(result), 1.5)]
 		p := tgot.NewPhoto(tg.FileURL(u))
 		p.Caption = q
-		return ctx.Reply(p)
+		return modules.Reply(ctx, msg, p)
 	},
 }
 
@@ -87,13 +89,14 @@ func fmtBool(b bool) string {
 
 var cacheTime = 60
 
-func OnInline(ctx tgot.QueryContext[tgot.InlineAnswer], q *tg.InlineQuery) {
+func OnInline(ctx tgot.InlineContext, q *tg.InlineQuery) {
 	imgs, err := searchImages(q.Query, false)
 	if len(imgs) == 0 {
 		if err != nil {
 			ctx.Logger().Error(err.Error())
 		}
 		ctx.Answer(tgot.InlineAnswer{})
+		return
 	}
 
 	n := len(imgs)
