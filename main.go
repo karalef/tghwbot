@@ -5,21 +5,21 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"tghwbot/modules"
 	"tghwbot/modules/debug"
 	"tghwbot/modules/images"
 	"tghwbot/modules/random"
 	"tghwbot/modules/text"
+	"tghwbot/modules/text/balaboba"
+	"tghwbot/web"
 
 	"github.com/karalef/tgot"
-	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/commands"
 	"github.com/karalef/tgot/logger"
+	"github.com/karalef/tgot/router"
 	"github.com/karalef/tgot/updates"
 )
 
 var color = flag.Bool("color", false, "use colored log")
-var wh = flag.Bool("webservice", false, "start as webservice")
 
 func init() {
 	flag.Parse()
@@ -33,63 +33,77 @@ func main() {
 	log := logger.Default("HwBot", colorConf)
 	log.Info("starting bot (PID: %d)", os.Getpid())
 
-	a, err := api.New(os.Getenv("TOKEN"), "", "", nil)
+	b, err := tgot.NewWithToken(os.Getenv("TOKEN"), log)
 	if err != nil {
-		log.Error("api initialization failed: %s", err.Error())
+		log.Error("bot initialization failed: %s", err.Error())
 		return
 	}
 
-	var poller updates.Poller
-	if *wh {
-		ws, err := initWebservice()
+	modsCtx := b.MakeContext("modules")
+	cbRouter := router.NewCallbacks()
+
+	var cmds commands.List
+	cmds = commands.List{
+		commands.MakeHelp(&cmds),
+		&debug.DebugCmd,
+		&random.Info,
+		&random.Number,
+		&random.When,
+		&text.Gen,
+		balaboba.Command(modsCtx, cbRouter),
+		&images.CitgenCmd,
+		&images.Search,
+		images.CraiyonCommand(modsCtx),
+	}
+	cmds.Setup(b)
+
+	b.OnInlineQuery = images.OnInline
+	b.OnCallbackQuery = cbRouter.Route
+	b.OnMessage = (&commands.MessageHandler{
+		Username: b.Me().Username,
+		Command:  cmds.Command,
+	}).Handle
+
+	run(b, log)
+	log.Info("exit")
+}
+
+func run(b *tgot.Bot, log *logger.Logger) {
+	var start func() error
+	var cancel func()
+	if u, ok := os.LookupEnv("WEBHOOK_URL"); ok {
+		ws, err := web.NewWebservice(b)
 		if err != nil {
-			log.Error(err.Error())
+			log.Error("failed to start webservice: %s", err.Error())
 			return
 		}
-		poller = ws.serv
+		addr := os.Getenv("PORT")
+		if addr != "" {
+			addr = ":" + addr
+		}
+		start = func() error {
+			return ws.Start(addr, u)
+		}
+		cancel = ws.Stop
 	} else {
-		poller = updates.NewLongPoller(30, 0, 0)
+		lp := updates.NewLongPoller(30, 0, 0)
+		start = func() error {
+			return lp.Run(b)
+		}
+		cancel = lp.Close
 	}
-
-	b, err := tgot.New(a, poller, tgot.Config{
-		Logger: log,
-		Commands: commands.List{
-			&debug.DebugCmd,
-			&random.Info,
-			&random.Number,
-			&random.Roll,
-			&random.When,
-			&text.Gen,
-			&text.BalabobaCmd,
-			&images.CitgenCmd,
-			&images.Search,
-			&images.CraiyonCmd,
-		},
-		Handler: tgot.Handler{
-			OnInlineQuery:   images.OnInline,
-			OnCallbackQuery: modules.CallbackRouter.Route,
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	modules.API = b.MakeContext("modules")
-	text.InitBalaboba()
-	images.InitCraiyon()
 
 	go func() {
 		sig := make(chan os.Signal)
 		signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
 		s := <-sig
-		b.Stop()
+		cancel()
 		log.Info("bot stopped by %s", s.String())
 	}()
 
 	log.Info("bot started")
-	err = b.Run()
+	err := start()
 	if err != nil {
 		log.Error("bot stopped with error: %s", err.Error())
 	}
-	log.Info("exit")
 }
