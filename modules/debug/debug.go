@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"runtime"
 	"tghwbot/common/format"
-	"tghwbot/modules"
 	"time"
 
 	"github.com/karalef/tgot"
@@ -36,7 +35,7 @@ var DebugCmd = commands.Command{
 				out = memStats(len(args) > 1 && args[1] == "gc")
 			}
 		}
-		return modules.ReplyText(ctx, msg, out)
+		return ctx.ReplyE(msg.ID, tgot.NewMessage(out))
 	},
 }
 

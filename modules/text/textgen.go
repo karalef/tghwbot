@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"tghwbot/modules"
 	"time"
 
 	"github.com/karalef/tgot"
@@ -23,7 +22,7 @@ var Gen = commands.Command{
 	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 		query := strings.Join(args, " ")
 		if query == "" {
-			return modules.ReplyText(ctx, msg, "Think of the beginning of the story")
+			return ctx.ReplyE(msg.ID, tgot.NewMessage("Think of the beginning of the story"))
 		}
 
 		textgenMut.Lock()
@@ -32,14 +31,14 @@ var Gen = commands.Command{
 		replies, err := porfirevich(query, 30)
 		if err != nil {
 			ctx.Logger().Error(err.Error())
-			return modules.ReplyText(ctx, msg, err.Error())
+			return ctx.ReplyE(msg.ID, tgot.NewMessage(err.Error()))
 		}
 
 		var text string
 		for _, r := range replies {
 			text += query + r + "\n\n"
 		}
-		return modules.ReplyText(ctx, msg, text)
+		return ctx.ReplyE(msg.ID, tgot.NewMessage(text))
 	},
 }
 

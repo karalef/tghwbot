@@ -8,7 +8,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"tghwbot/modules"
 	"tghwbot/modules/random"
 	"unsafe"
 
@@ -25,21 +24,21 @@ var Search = commands.Command{
 	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 		q := strings.Join(args, " ")
 		if q == "" {
-			return modules.ReplyText(ctx, msg, "Provide keywords")
+			return ctx.ReplyE(msg.ID, tgot.NewMessage("Provide keywords"))
 		}
 		ctx.SendChatAction(tg.ActionUploadPhoto)
 		result, err := searchImages(q, safeSearch)
 		if err != nil {
 			ctx.Logger().Error(err.Error())
-			return modules.ReplyText(ctx, msg, err.Error())
+			ctx.ReplyE(msg.ID, tgot.NewMessage(err.Error()))
 		}
 		if len(result) == 0 {
-			return modules.ReplyText(ctx, msg, "No results")
+			return ctx.ReplyE(msg.ID, tgot.NewMessage("No results"))
 		}
 		u := result[random.RandP(len(result), 1.5)]
 		p := tgot.NewPhoto(tg.FileURL(u))
 		p.Caption = q
-		return modules.Reply(ctx, msg, p)
+		return ctx.ReplyE(msg.ID, p)
 	},
 }
 

@@ -8,7 +8,6 @@ import (
 	"image/png"
 	"io"
 	"strings"
-	"tghwbot/modules"
 	"tghwbot/modules/images/fonts"
 	"tghwbot/modules/images/utils"
 	"time"
@@ -25,14 +24,14 @@ var CitgenCmd = commands.Command{
 	Description: "Генерация цитаты",
 	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 		if msg.ReplyTo == nil {
-			return modules.ReplyText(ctx, msg, "Ответьте на сообщение")
+			return ctx.ReplyE(msg.ID, tgot.NewMessage("Reply to message"))
 		}
 		from := msg.ReplyTo.From
 		text := msg.ReplyTo.Text
 		date := msg.ReplyTo.Time()
 		caption := ""
 		if text == "" {
-			return modules.ReplyText(ctx, msg, "Сообщение не содержит текста")
+			return ctx.ReplyE(msg.ID, tgot.NewMessage("Message contains no text"))
 		}
 		ctx.SendChatAction(tg.ActionUploadPhoto)
 
@@ -50,7 +49,7 @@ var CitgenCmd = commands.Command{
 		data, err := DefaultCitgen.GeneratePNGReader(photo, user, text, date)
 		if err != nil {
 			log.Error("citgen generate: %s", err.Error())
-			return modules.ReplyText(ctx, msg, err.Error())
+			return ctx.ReplyE(msg.ID, tgot.NewMessage(err.Error()))
 		}
 		p := tgot.NewPhoto(tg.FileReader("citgen.png", data))
 		p.Caption = caption

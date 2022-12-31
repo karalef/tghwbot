@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"tghwbot/modules"
 	"tghwbot/queue"
 	"time"
 
@@ -20,13 +19,11 @@ import (
 	"github.com/karalef/tgot/commands"
 )
 
-var craiyon *Craiyon
-
-func InitCraiyon() {
+func CraiyonCommand(modulesCtx tgot.Context) *commands.Command {
 	d := net.Dialer{
 		Timeout: 2 * time.Minute,
 	}
-	craiyon = &Craiyon{
+	craiyon := &Craiyon{
 		client: http.Client{
 			Timeout: d.Timeout,
 			Transport: &http.Transport{
@@ -34,32 +31,32 @@ func InitCraiyon() {
 				TLSHandshakeTimeout: d.Timeout,
 			},
 		},
-		api: modules.API.Child("craiyon"),
+		api: modulesCtx.Child("craiyon"),
 	}
 	craiyon.queue = queue.New(craiyon.complete, 5)
-}
 
-var CraiyonCmd = commands.Command{
-	Cmd:         "dalle",
-	Description: "Craiyon, formerly DALL·E mini, is an AI model that can draw images from any text prompt!",
-	Args: []commands.Arg{
-		{
-			Required: true,
-			Name:     "prompt",
+	return &commands.Command{
+		Cmd:         "dalle",
+		Description: "Craiyon, formerly DALL·E mini, is an AI model that can draw images from any text prompt!",
+		Args: []commands.Arg{
+			{
+				Required: true,
+				Name:     "prompt",
+			},
 		},
-	},
-	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
-		prompt := strings.Join(args, " ")
-		if len(prompt) == 0 {
-			return modules.ReplyText(ctx, msg, "write a prompt")
-		}
-		craiyon.queue.Push(craiyonRequest{
-			chat:   msg.Chat.ID,
-			orig:   msg.ID,
-			prompt: prompt,
-		})
-		return modules.ReplyText(ctx, msg, "request is added to the queue")
-	},
+		Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
+			prompt := strings.Join(args, " ")
+			if len(prompt) == 0 {
+				return ctx.ReplyE(msg.ID, tgot.NewMessage("write a prompt"))
+			}
+			craiyon.queue.Push(craiyonRequest{
+				chat:   msg.Chat.ID,
+				orig:   msg.ID,
+				prompt: prompt,
+			})
+			return ctx.ReplyE(msg.ID, tgot.NewMessage("request is added to the queue"))
+		},
+	}
 }
 
 type craiyonRequest struct {
@@ -82,19 +79,21 @@ func (c *Craiyon) complete(req craiyonRequest) {
 	imgs, err := c.Generate(req.prompt)
 	if err != nil {
 		c.api.Logger().Error(err.Error())
-		err = modules.ReplyText(chat, &tg.Message{ID: req.orig}, "Generation error")
+		err = chat.ReplyE(req.orig, tgot.NewMessage("Generation error"))
 		if err != nil {
 			c.api.Logger().Error(err.Error())
 		}
 		return
 	}
 
-	mediaGroup := make(tgot.MediaGroup, len(imgs))
+	mediaGroup := tgot.MediaGroup{
+		Media: make([]tg.MediaInputter, len(imgs)),
+	}
 	for i := range imgs {
-		mediaGroup[i] = tg.NewInputMediaPhoto(tg.FileReader(strconv.Itoa(i), imgs[i]))
+		mediaGroup.Media[i] = tg.NewInputMediaPhoto(tg.FileReader(strconv.Itoa(i), imgs[i]))
 	}
 
-	_, err = chat.SendMediaGroup(mediaGroup, tgot.SendOptions[*tg.NoMarkup]{
+	_, err = chat.SendMediaGroup(mediaGroup, tgot.SendOptions{
 		ReplyTo: req.orig,
 	})
 	if err != nil {
