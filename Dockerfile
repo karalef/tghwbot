@@ -2,7 +2,7 @@
 ## Build
 ##
 
-FROM golang:1.18-alpine AS build
+FROM golang:1.19-alpine AS build
 
 WORKDIR /src
 
@@ -19,6 +19,6 @@ FROM alpine:latest
 
 WORKDIR /app
 
-COPY --from=build /src/bin .
+COPY --from=build /src/bin/hwbot ./
 
-ENTRYPOINT [ "./bin/hwbot" ]
+ENTRYPOINT [ "./hwbot" ]

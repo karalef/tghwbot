@@ -6,7 +6,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.40.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/karalef/balaboba v0.0.0-20221204170518-eb946a2383e3
-	github.com/karalef/tgot v0.0.0-20230106154656-201cc2e81616
+	github.com/karalef/tgot v0.0.0-20230215211803-c477170e2625
 	golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9
 )
 

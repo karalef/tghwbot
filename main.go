@@ -9,7 +9,6 @@ import (
 	"tghwbot/modules/images"
 	"tghwbot/modules/random"
 	"tghwbot/modules/text"
-	"tghwbot/modules/text/balaboba"
 	"tghwbot/web"
 
 	"github.com/karalef/tgot"
@@ -50,7 +49,6 @@ func main() {
 		&random.Number,
 		&random.When,
 		&text.Gen,
-		balaboba.Command(modsCtx, cbRouter),
 		&images.CitgenCmd,
 		&images.Search,
 		images.CraiyonCommand(modsCtx),

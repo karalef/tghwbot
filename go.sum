@@ -10,6 +10,8 @@ github.com/karalef/tgot v0.0.0-20221231133434-ca96c1be1799 h1:HnCq+drIWdRpCrD2q7
 github.com/karalef/tgot v0.0.0-20221231133434-ca96c1be1799/go.mod h1:u9PQNBivl/hO4vLqKHza4nybB17rV9KCMXUGsPKxSKA=
 github.com/karalef/tgot v0.0.0-20230106154656-201cc2e81616 h1:TjtRHp31jhTyjh93ZLv57J47hrWzCZOXkWWiiR0WsNE=
 github.com/karalef/tgot v0.0.0-20230106154656-201cc2e81616/go.mod h1:u9PQNBivl/hO4vLqKHza4nybB17rV9KCMXUGsPKxSKA=
+github.com/karalef/tgot v0.0.0-20230215211803-c477170e2625 h1:W+4JmRUZds+gimZzutaeswqFITehvwJgjbB0LflK0RQ=
+github.com/karalef/tgot v0.0.0-20230215211803-c477170e2625/go.mod h1:u9PQNBivl/hO4vLqKHza4nybB17rV9KCMXUGsPKxSKA=
 github.com/klauspost/compress v1.15.9 h1:wKRjX6JRtDdrE9qwa4b/Cip7ACOshUI4smpCQanqjSY=
 github.com/klauspost/compress v1.15.9/go.mod h1:PhcZ0MbTNciWF3rruxRgKxI5NkcHHrHUDtV4Yw2GlzU=
 github.com/mattn/go-colorable v0.1.13 h1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=
