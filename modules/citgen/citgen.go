@@ -9,9 +9,8 @@ import (
 	"io"
 	"strings"
 	"tghwbot/common"
-	"tghwbot/modules/images"
-	"tghwbot/modules/images/fonts"
-	"tghwbot/modules/images/utils"
+	"tghwbot/common/images"
+	"tghwbot/common/images/fonts"
 	"time"
 
 	"github.com/karalef/tgot"
@@ -112,7 +111,7 @@ func (c *Citgen) Generate(photo image.Image, name, quote string, t time.Time) im
 	if photo == nil {
 		photo = image.Rect(0, 0, c.PhotoSize, c.PhotoSize)
 	} else {
-		photo = utils.Resize(photo, c.PhotoSize, c.PhotoSize)
+		photo = images.Resize(photo, c.PhotoSize, c.PhotoSize)
 	}
 	lineHeight := fonts.Height(c.FontFace)
 	textOffsetX := c.Padding*2 + c.PhotoSize
@@ -126,7 +125,7 @@ func (c *Citgen) Generate(photo image.Image, name, quote string, t time.Time) im
 
 	// draw photo
 	offset := image.Pt(c.Padding, c.Padding+(img.Bounds().Dy()-bottomContentPadding-c.Padding)/2-c.PhotoSize/2)
-	utils.DrawClipCircle(img, offset, photo, image.Pt(c.PhotoSize/2, c.PhotoSize/2), c.PhotoSize/2)
+	images.DrawClipCircle(img, offset, photo, image.Pt(c.PhotoSize/2, c.PhotoSize/2), c.PhotoSize/2)
 
 	d := font.Drawer{
 		Dst:  img,
