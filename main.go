@@ -11,6 +11,7 @@ import (
 	"tghwbot/modules/search"
 	"tghwbot/modules/text"
 	"tghwbot/web"
+	"time"
 
 	"github.com/karalef/tgot"
 	"github.com/karalef/tgot/commands"
@@ -21,7 +22,9 @@ import (
 )
 
 func main() {
+	time.Local = time.UTC
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
 	log.Printf("starting bot (PID: %d)", os.Getpid())
 
 	b, err := tgot.NewWithToken(os.Getenv("TOKEN"))
