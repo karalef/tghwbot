@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"tghwbot/common"
 	"time"
 
 	"github.com/karalef/tgot"
@@ -16,10 +17,11 @@ import (
 
 var textgenMut sync.Mutex
 
-var Gen = commands.Command{
-	Cmd:         "textgen",
-	Description: "text generation",
+var Gen = commands.SimpleCommand{
+	Command: "textgen",
+	Desc:    "text generation",
 	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
+		logger := common.Log(ctx)
 		query := strings.Join(args, " ")
 		if query == "" {
 			return ctx.ReplyE(msg.ID, tgot.NewMessage("Think of the beginning of the story"))
@@ -30,7 +32,7 @@ var Gen = commands.Command{
 		ctx.SendChatAction(tg.ActionTyping)
 		replies, err := porfirevich(query, 30)
 		if err != nil {
-			ctx.Logger().Error(err.Error())
+			logger.Err(err).Msg("text generation failed")
 			return ctx.ReplyE(msg.ID, tgot.NewMessage(err.Error()))
 		}
 

@@ -1,4 +1,4 @@
-package images
+package search
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"tghwbot/common"
 	"tghwbot/modules/random"
 	"unsafe"
 
@@ -18,10 +19,13 @@ import (
 
 var _, safeSearch = os.LookupEnv("IMG_SS")
 
-var Search = commands.Command{
-	Cmd:         "img",
-	Description: "random image",
+// CMD is an "img" command.
+var CMD = commands.SimpleCommand{
+	Command: "img",
+	Desc:    "random image",
 	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
+		logger := common.Log(ctx)
+
 		q := strings.Join(args, " ")
 		if q == "" {
 			return ctx.ReplyE(msg.ID, tgot.NewMessage("Provide keywords"))
@@ -29,8 +33,11 @@ var Search = commands.Command{
 		ctx.SendChatAction(tg.ActionUploadPhoto)
 		result, err := searchImages(q, safeSearch)
 		if err != nil {
-			ctx.Logger().Error(err.Error())
-			ctx.ReplyE(msg.ID, tgot.NewMessage(err.Error()))
+			logger.Err(err).Msg("search images failed")
+			if err1 := errors.Unwrap(err); err1 != nil {
+				err = err1
+			}
+			ctx.ReplyE(msg.ID, tgot.NewMessage("image search error: "+err.Error()))
 		}
 		if len(result) == 0 {
 			return ctx.ReplyE(msg.ID, tgot.NewMessage("No results"))
@@ -89,10 +96,12 @@ func fmtBool(b bool) string {
 var cacheTime = 60
 
 func OnInline(ctx tgot.InlineContext, q *tg.InlineQuery) {
+	logger := common.Log(ctx)
+
 	imgs, err := searchImages(q.Query, false)
 	if len(imgs) == 0 {
 		if err != nil {
-			ctx.Logger().Error(err.Error())
+			logger.Err(err).Msg("search images failed")
 		}
 		ctx.Answer(tgot.InlineAnswer{})
 		return
@@ -119,5 +128,8 @@ func OnInline(ctx tgot.InlineContext, q *tg.InlineQuery) {
 		}
 	}
 
-	ctx.Answer(answer)
+	err = ctx.Answer(answer)
+	if err != nil {
+		logger.Err(err).Msg("answer failed")
+	}
 }

@@ -12,9 +12,10 @@ import (
 	"github.com/karalef/tgot/commands"
 )
 
-var DebugCmd = commands.Command{
-	Cmd:         "debug",
-	Description: "debug",
+// CMD is a debug command.
+var CMD = commands.SimpleCommand{
+	Command: "debug",
+	Desc:    "debug",
 	Args: []commands.Arg{
 		{
 			Consts: []string{"obj", "mem"},

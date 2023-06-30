@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"io"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,8 +11,8 @@ import (
 )
 
 // OnWebhook handles webhook request.
-func (w *Webservice) OnWebhook(ctx *fiber.Ctx) error {
-	if err := w.verifySecret(ctx); err != nil {
+func (ws *Service) OnWebhook(ctx *fiber.Ctx) error {
+	if err := ws.verifySecret(ctx); err != nil {
 		return err
 	}
 
@@ -28,21 +27,19 @@ func (w *Webservice) OnWebhook(ctx *fiber.Ctx) error {
 		return nil
 	}
 
-	return w.bot.Handle(&upd)
+	return ws.bot.Handle(&upd)
 }
 
-// length 1-256 (default: 128)
-func generateSecret(length uint) (string, error) {
-	if length > 256 {
-		return "", errors.New("secret length must be in range 1-256")
+// length 1-128 (default: 64)
+// the size of the output will be twice the length
+func generateSecret(length uint8) string {
+	if length == 0 {
+		length = 64
 	}
-	if length < 1 {
-		length = 128
-	}
-	buf := bytes.NewBuffer(make([]byte, 0, length+length%2))
-	_, err := io.CopyN(hex.NewEncoder(buf), rand.Reader, int64(length/2+length%2))
+	buf := bytes.NewBuffer(make([]byte, 0, length))
+	_, err := io.CopyN(hex.NewEncoder(buf), rand.Reader, int64(length))
 	if err != nil {
-		return "", err
+		panic("error while generating secret: " + err.Error())
 	}
-	return buf.String()[:length], nil
+	return buf.String()[:length]
 }

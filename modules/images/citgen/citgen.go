@@ -1,4 +1,4 @@
-package images
+package citgen
 
 import (
 	"bytes"
@@ -8,6 +8,8 @@ import (
 	"image/png"
 	"io"
 	"strings"
+	"tghwbot/common"
+	"tghwbot/modules/images"
 	"tghwbot/modules/images/fonts"
 	"tghwbot/modules/images/utils"
 	"time"
@@ -19,10 +21,13 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-var CitgenCmd = commands.Command{
-	Cmd:         "citgen",
-	Description: "Генерация цитаты",
+// CMD is a "citgen" command.
+var CMD = commands.SimpleCommand{
+	Command: "citgen",
+	Desc:    "create an image with a quote",
 	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
+		logger := common.Log(ctx)
+
 		if msg.ReplyTo == nil {
 			return ctx.ReplyE(msg.ID, tgot.NewMessage("Reply to message"))
 		}
@@ -35,10 +40,9 @@ var CitgenCmd = commands.Command{
 		}
 		ctx.SendChatAction(tg.ActionUploadPhoto)
 
-		log := ctx.Logger()
 		photo, err := getPhoto(&ctx.Context, from.ID, 200)
 		if err != nil {
-			log.Warn("citgen: %s", err.Error())
+			logger.Err(err).Msg("failed to get photo")
 			caption = err.Error()
 		}
 
@@ -46,9 +50,10 @@ var CitgenCmd = commands.Command{
 		if user == "" || strings.ReplaceAll(user, " ", "") == "" {
 			user = from.FirstName + from.LastName
 		}
+
 		data, err := DefaultCitgen.GeneratePNGReader(photo, user, text, date)
 		if err != nil {
-			log.Error("citgen generate: %s", err.Error())
+			logger.Err(err).Msg("failed to generate photo")
 			return ctx.ReplyE(msg.ID, tgot.NewMessage(err.Error()))
 		}
 		p := tgot.NewPhoto(tg.FileReader("citgen.png", data))
@@ -99,19 +104,11 @@ type Citgen struct {
 }
 
 func (c *Citgen) GeneratePNGReader(photo image.Image, name, quote string, t time.Time) (io.Reader, error) {
-	p, err := c.Generate(photo, name, quote, t)
-	if err != nil {
-		return nil, err
-	}
 	buf := bytes.NewBuffer(nil)
-	err = png.Encode(buf, p)
-	if err != nil {
-		return nil, err
-	}
-	return buf, nil
+	return buf, png.Encode(buf, c.Generate(photo, name, quote, t))
 }
 
-func (c *Citgen) Generate(photo image.Image, name, quote string, t time.Time) (image.Image, error) {
+func (c *Citgen) Generate(photo image.Image, name, quote string, t time.Time) image.Image {
 	if photo == nil {
 		photo = image.Rect(0, 0, c.PhotoSize, c.PhotoSize)
 	} else {
@@ -147,7 +144,7 @@ func (c *Citgen) Generate(photo image.Image, name, quote string, t time.Time) (i
 	// draw name
 	d.Dot.X = fixed.I(c.Padding)
 	d.Dot.Y = fixed.I(img.Bounds().Dy() - c.Padding)
-	d.DrawString(name + " " + copyrightSymbol)
+	d.DrawString(name + " " + images.CopyrightSymbol)
 
 	// draw time
 	ft := t.Format("02.01.2006 15:04")
@@ -155,7 +152,7 @@ func (c *Citgen) Generate(photo image.Image, name, quote string, t time.Time) (i
 	d.Dot.Y = fixed.I(img.Bounds().Dy() - c.Padding)
 	d.DrawString(ft)
 
-	return img, nil
+	return img
 }
 
 func (c *Citgen) splitLines(s string, width, minHeight int) ([]string, int) {

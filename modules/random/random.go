@@ -26,9 +26,9 @@ func RandP(max int, power float64) int {
 	return int(math.Floor(float64(max) * math.Pow(r, power)))
 }
 
-var Number = commands.Command{
-	Cmd:         "rand",
-	Description: "random number",
+var Number = commands.SimpleCommand{
+	Command: "rand",
+	Desc:    "random number",
 	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 		var max int64 = 100
 		var offset int64 = 0
@@ -52,9 +52,9 @@ var Number = commands.Command{
 	},
 }
 
-var Info = commands.Command{
-	Cmd:         "info",
-	Description: "event probability",
+var Info = commands.SimpleCommand{
+	Command: "info",
+	Desc:    "event probability",
 	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 		if len(args) == 0 {
 			return ctx.ReplyE(msg.ID, tgot.NewMessage("Specify the event"))
@@ -65,9 +65,9 @@ var Info = commands.Command{
 	},
 }
 
-var When = commands.Command{
-	Cmd:         "when",
-	Description: "random date of event",
+var When = commands.SimpleCommand{
+	Command: "when",
+	Desc:    "random date of event",
 	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
 		if len(args) == 0 {
 			return ctx.ReplyE(msg.ID, tgot.NewMessage("Specify the event"))

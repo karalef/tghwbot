@@ -1,4 +1,4 @@
-package images
+package craiyon
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"tghwbot/common"
 	"tghwbot/queue"
 	"time"
 
@@ -19,7 +20,8 @@ import (
 	"github.com/karalef/tgot/commands"
 )
 
-func CraiyonCommand(modulesCtx tgot.Context) *commands.Command {
+// CMD creates a "dalle" command.
+func CMD(modulesCtx tgot.Context) commands.Command {
 	d := net.Dialer{
 		Timeout: 2 * time.Minute,
 	}
@@ -35,9 +37,9 @@ func CraiyonCommand(modulesCtx tgot.Context) *commands.Command {
 	}
 	craiyon.queue = queue.New(craiyon.complete, 5)
 
-	return &commands.Command{
-		Cmd:         "dalle",
-		Description: "Craiyon, formerly DALL·E mini, is an AI model that can draw images from any text prompt!",
+	return commands.SimpleCommand{
+		Command: "dalle",
+		Desc:    "Craiyon, formerly DALL·E mini, is an AI model that can draw images from any text prompt!",
 		Args: []commands.Arg{
 			{
 				Required: true,
@@ -74,14 +76,16 @@ type Craiyon struct {
 }
 
 func (c *Craiyon) complete(req craiyonRequest) {
+	logger := common.Log(c.api)
+
 	chat := c.api.OpenChat(tgot.ChatID(req.chat))
 
 	imgs, err := c.Generate(req.prompt)
 	if err != nil {
-		c.api.Logger().Error(err.Error())
+		logger.Err(err).Msg("generate images failed")
 		err = chat.ReplyE(req.orig, tgot.NewMessage("Generation error"))
 		if err != nil {
-			c.api.Logger().Error(err.Error())
+			logger.Err(err).Msg("failed to send message")
 		}
 		return
 	}
@@ -90,14 +94,16 @@ func (c *Craiyon) complete(req craiyonRequest) {
 		Media: make([]tg.MediaInputter, len(imgs)),
 	}
 	for i := range imgs {
-		mediaGroup.Media[i] = tg.NewInputMediaPhoto(tg.FileReader(strconv.Itoa(i), imgs[i]))
+		mediaGroup.Media[i] = &tg.InputMedia[tg.InputMediaPhoto]{
+			Media: tg.FileReader(strconv.Itoa(i), imgs[i]),
+		}
 	}
 
 	_, err = chat.SendMediaGroup(mediaGroup, tgot.SendOptions{
 		ReplyTo: req.orig,
 	})
 	if err != nil {
-		c.api.Logger().Error(err.Error())
+		logger.Err(err).Msg("failed to send media")
 	}
 }
 

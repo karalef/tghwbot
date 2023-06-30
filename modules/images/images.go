@@ -5,6 +5,7 @@ import (
 	_ "image/png"  // png decoding
 )
 
+// symbols.
 const (
-	copyrightSymbol = "©"
+	CopyrightSymbol = "©"
 )

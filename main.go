@@ -1,40 +1,32 @@
 package main
 
 import (
-	"flag"
 	"os"
 	"os/signal"
 	"syscall"
 	"tghwbot/modules/debug"
-	"tghwbot/modules/images"
+	"tghwbot/modules/images/citgen"
+	"tghwbot/modules/images/craiyon"
+	"tghwbot/modules/images/search"
 	"tghwbot/modules/random"
 	"tghwbot/modules/text"
 	"tghwbot/web"
 
 	"github.com/karalef/tgot"
 	"github.com/karalef/tgot/commands"
-	"github.com/karalef/tgot/logger"
 	"github.com/karalef/tgot/router"
 	"github.com/karalef/tgot/updates"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
-var color = flag.Bool("color", false, "use colored log")
-
-func init() {
-	flag.Parse()
-}
-
 func main() {
-	var colorConf logger.ColorConfig
-	if *color {
-		colorConf = logger.DefaultColorConfig
-	}
-	log := logger.Default("HwBot", colorConf)
-	log.Info("starting bot (PID: %d)", os.Getpid())
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	log.Printf("starting bot (PID: %d)", os.Getpid())
 
-	b, err := tgot.NewWithToken(os.Getenv("TOKEN"), log)
+	b, err := tgot.NewWithToken(os.Getenv("TOKEN"))
 	if err != nil {
-		log.Error("bot initialization failed: %s", err.Error())
+		log.Error().Err(err).Msg("bot initialization failed")
 		return
 	}
 
@@ -44,37 +36,32 @@ func main() {
 	var cmds commands.List
 	cmds = commands.List{
 		commands.MakeHelp(&cmds),
-		&debug.DebugCmd,
-		&random.Info,
-		&random.Number,
-		&random.When,
-		&text.Gen,
-		&images.CitgenCmd,
-		&images.Search,
-		images.CraiyonCommand(modsCtx),
+		debug.CMD,
+		random.Info,
+		random.Number,
+		random.When,
+		text.Gen,
+		citgen.CMD,
+		search.CMD,
+		craiyon.CMD(modsCtx),
 	}
 	cmds.Setup(b)
 
-	b.OnInlineQuery = images.OnInline
+	b.OnInlineQuery = search.OnInline
 	b.OnCallbackQuery = cbRouter.Route
 	b.OnMessage = (&commands.MessageHandler{
 		Username: b.Me().Username,
 		Command:  cmds.Command,
 	}).Handle
 
-	run(b, log)
-	log.Info("exit")
+	run(b)
 }
 
-func run(b *tgot.Bot, log *logger.Logger) {
+func run(b *tgot.Bot) {
 	var start func() error
 	var cancel func()
 	if u, ok := os.LookupEnv("WEBHOOK_URL"); ok {
-		ws, err := web.NewWebservice(b)
-		if err != nil {
-			log.Error("failed to start webservice: %s", err.Error())
-			return
-		}
+		ws := web.New(b)
 		addr := os.Getenv("PORT")
 		if addr != "" {
 			addr = ":" + addr
@@ -96,12 +83,12 @@ func run(b *tgot.Bot, log *logger.Logger) {
 		signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
 		s := <-sig
 		cancel()
-		log.Info("bot stopped by %s", s.String())
+		log.Info().Msgf("bot stopped by %s signal", s.String())
 	}()
 
-	log.Info("bot started")
+	log.Info().Msg("bot started")
 	err := start()
 	if err != nil {
-		log.Error("bot stopped with error: %s", err.Error())
+		log.Err(err).Msg("bot stopped with error")
 	}
 }
