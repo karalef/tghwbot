@@ -18,6 +18,7 @@ import (
 )
 
 var _, safeSearch = os.LookupEnv("IMG_SS")
+var searxngURL = os.Getenv("IMG_URL")
 
 // CMD is an "img" command.
 var CMD = commands.SimpleCommand{
@@ -49,13 +50,6 @@ var CMD = commands.SimpleCommand{
 	},
 }
 
-/*
-"https://searx.prvcy.eu/search?",
-"https://search.unlocked.link/search?",
-"https://search.sapti.me/search?",
-"https://searx.zapashcanon.fr/search?",
-*/
-
 func searchImages(q string, safe bool) ([]string, error) {
 	vals := url.Values{
 		"q":          {q},
@@ -63,7 +57,7 @@ func searchImages(q string, safe bool) ([]string, error) {
 		"categories": {"images"},
 		"safesearch": {fmtBool(safe)},
 	}
-	resp, err := http.Get("https://searx.zapashcanon.fr/search?" + vals.Encode())
+	resp, err := http.Get("https://" + searxngURL + "/search?" + vals.Encode())
 	if err != nil {
 		return nil, err
 	}
