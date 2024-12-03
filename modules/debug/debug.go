@@ -24,7 +24,7 @@ var CMD = commands.SimpleCommand{
 			Consts: []string{"gc"},
 		},
 	},
-	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
+	Func: func(ctx *tgot.Message, msg *tg.Message, args []string) error {
 		var out string
 		if len(args) == 0 {
 			out = stat()
@@ -36,7 +36,7 @@ var CMD = commands.SimpleCommand{
 				out = memStats(len(args) > 1 && args[1] == "gc")
 			}
 		}
-		return ctx.ReplyE(msg.ID, tgot.NewMessage(out))
+		return ctx.ReplyText(out)
 	},
 }
 

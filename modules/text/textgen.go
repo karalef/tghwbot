@@ -20,27 +20,27 @@ var textgenMut sync.Mutex
 var Gen = commands.SimpleCommand{
 	Command: "textgen",
 	Desc:    "text generation",
-	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
+	Func: func(ctx *tgot.Message, msg *tg.Message, args []string) error {
 		logger := common.Log(ctx)
 		query := strings.Join(args, " ")
 		if query == "" {
-			return ctx.ReplyE(msg.ID, tgot.NewMessage("Think of the beginning of the story"))
+			return ctx.ReplyText("Think of the beginning of the story")
 		}
 
 		textgenMut.Lock()
 		defer textgenMut.Unlock()
-		ctx.SendChatAction(tg.ActionTyping)
+		ctx.Chat().SendChatAction(tg.ActionTyping)
 		replies, err := porfirevich(query, 30)
 		if err != nil {
 			logger.Err(err).Msg("text generation failed")
-			return ctx.ReplyE(msg.ID, tgot.NewMessage(err.Error()))
+			return ctx.ReplyText(err.Error())
 		}
 
 		var text string
 		for _, r := range replies {
 			text += query + r + "\n\n"
 		}
-		return ctx.ReplyE(msg.ID, tgot.NewMessage(text))
+		return ctx.ReplyText(text)
 	},
 }
 

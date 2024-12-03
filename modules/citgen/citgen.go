@@ -24,22 +24,25 @@ import (
 var CMD = commands.SimpleCommand{
 	Command: "citgen",
 	Desc:    "create an image with a quote",
-	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
+	Func: func(ctx *tgot.Message, msg *tg.Message, args []string) error {
 		logger := common.Log(ctx)
 
 		if msg.ReplyTo == nil {
-			return ctx.ReplyE(msg.ID, tgot.NewMessage("Reply to message"))
+			return ctx.ReplyText("Reply to message")
 		}
 		from := msg.ReplyTo.From
 		text := msg.ReplyTo.Text
 		date := msg.ReplyTo.Time()
 		caption := ""
 		if text == "" {
-			return ctx.ReplyE(msg.ID, tgot.NewMessage("Message contains no text"))
+			return ctx.ReplyText("Message contains no text")
 		}
-		ctx.SendChatAction(tg.ActionUploadPhoto)
+		err := ctx.Chat().SendChatAction(tg.ActionUploadPhoto)
+		if err != nil {
+			logger.Err(err).Msg("failed to send action")
+		}
 
-		photo, err := getPhoto(&ctx.Context, from.ID, 200)
+		photo, err := getPhoto(ctx, from.ID, 200)
 		if err != nil {
 			logger.Err(err).Msg("failed to get photo")
 			caption = err.Error()
@@ -53,16 +56,16 @@ var CMD = commands.SimpleCommand{
 		data, err := DefaultCitgen.GeneratePNGReader(photo, user, text, date)
 		if err != nil {
 			logger.Err(err).Msg("failed to generate photo")
-			return ctx.ReplyE(msg.ID, tgot.NewMessage(err.Error()))
+			return ctx.ReplyText(err.Error())
 		}
 		p := tgot.NewPhoto(tg.FileReader("citgen.png", data))
 		p.Caption = caption
-		return ctx.SendE(p)
+		return ctx.Chat().SendE(p)
 	},
 }
 
-func getPhoto(ctx *tgot.Context, from int64, minSize int) (image.Image, error) {
-	ph, err := ctx.GetUserPhotos(from)
+func getPhoto(ctx *tgot.Message, from int64, minSize int) (image.Image, error) {
+	ph, err := tgot.WithUser(ctx, from).GetPhotos()
 	if err != nil || ph.TotalCount == 0 {
 		return nil, err
 	}
@@ -74,7 +77,13 @@ func getPhoto(ctx *tgot.Context, from int64, minSize int) (image.Image, error) {
 			break
 		}
 	}
-	rc, err := ctx.DownloadReaderFile(fid)
+
+	bot := ctx.Bot()
+	f, err := bot.GetFile(fid)
+	if err != nil {
+		return nil, err
+	}
+	rc, err := bot.Download(f.FilePath)
 	if err != nil {
 		return nil, err
 	}

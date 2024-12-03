@@ -2,23 +2,21 @@
 ## Build
 ##
 
-FROM golang:1.19-alpine AS build
+FROM golang:1.23.2 AS build
 
-WORKDIR /src
+WORKDIR /go/src/tghwbot
 
-COPY . ./
+COPY . .
 
-RUN go build -o ./bin/hwbot ./
+RUN CGO_ENABLED=0 go build -o /go/bin/hwbot 
 
 
 ##
 ## Deploy
 ##
 
-FROM alpine:latest
+FROM gcr.io/distroless/static-debian12
 
-WORKDIR /app
+COPY --from=build /go/bin/hwbot /
 
-COPY --from=build /src/bin/hwbot ./
-
-ENTRYPOINT [ "./hwbot" ]
+ENTRYPOINT [ "/hwbot" ]

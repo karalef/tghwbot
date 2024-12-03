@@ -29,7 +29,7 @@ func RandP(max int, power float64) int {
 var Number = commands.SimpleCommand{
 	Command: "rand",
 	Desc:    "random number",
-	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
+	Func: func(ctx *tgot.Message, msg *tg.Message, args []string) error {
 		var max int64 = 100
 		var offset int64 = 0
 		if len(args) > 0 {
@@ -38,42 +38,42 @@ var Number = commands.SimpleCommand{
 			if i := strings.IndexByte(num, '-'); i > 0 && i < len(num)-1 {
 				offset, err = strconv.ParseInt(num[:i], 10, 64)
 				if err != nil || offset < 0 {
-					return ctx.ReplyE(msg.ID, tgot.NewMessage("Specify the numbers in range 0 - MaxInt64"))
+					return ctx.ReplyText("Specify the numbers in range 0 - MaxInt64")
 				}
 				num = num[i+1:]
 			}
 			max, err = strconv.ParseInt(num, 10, 64)
 			if err != nil || max <= 0 {
-				return ctx.ReplyE(msg.ID, tgot.NewMessage("Specify the numbers in range 1 - MaxInt64"))
+				return ctx.ReplyText("Specify the numbers in range 1 - MaxInt64")
 			}
 		}
 		max -= offset
-		return ctx.ReplyE(msg.ID, tgot.NewMessage(strconv.FormatInt(offset+myRand.Int63n(max), 10)))
+		return ctx.ReplyText(strconv.FormatInt(offset+myRand.Int63n(max), 10))
 	},
 }
 
 var Info = commands.SimpleCommand{
 	Command: "info",
 	Desc:    "event probability",
-	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
+	Func: func(ctx *tgot.Message, msg *tg.Message, args []string) error {
 		if len(args) == 0 {
-			return ctx.ReplyE(msg.ID, tgot.NewMessage("Specify the event"))
+			return ctx.ReplyText("Specify the event")
 		}
 		p := myRand.Intn(101)
 		e := strings.Join(args, " ")
-		return ctx.ReplyE(msg.ID, tgot.NewMessage("The probability that "+e+" — "+strconv.Itoa(p)+"%"))
+		return ctx.ReplyText("The probability that " + e + " — " + strconv.Itoa(p) + "%")
 	},
 }
 
 var When = commands.SimpleCommand{
 	Command: "when",
 	Desc:    "random date of event",
-	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
+	Func: func(ctx *tgot.Message, msg *tg.Message, args []string) error {
 		if len(args) == 0 {
-			return ctx.ReplyE(msg.ID, tgot.NewMessage("Specify the event"))
+			return ctx.ReplyText("Specify the event")
 		}
 		t := time.Now().AddDate(RandP(51, 1.5), RandInt(12), RandInt(31))
 		e := strings.Join(args, " ")
-		return ctx.ReplyE(msg.ID, tgot.NewMessage(e+" "+t.Format("02 Jan 2006")))
+		return ctx.ReplyText(e + " " + t.Format("02 Jan 2006"))
 	},
 }

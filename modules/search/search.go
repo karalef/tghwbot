@@ -8,56 +8,55 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unsafe"
+
 	"tghwbot/common"
 	"tghwbot/modules/random"
-	"unsafe"
 
 	"github.com/karalef/tgot"
 	"github.com/karalef/tgot/api/tg"
 	"github.com/karalef/tgot/commands"
 )
 
-var _, safeSearch = os.LookupEnv("IMG_SS")
 var searxngURL = os.Getenv("IMG_URL")
 
 // CMD is an "img" command.
 var CMD = commands.SimpleCommand{
 	Command: "img",
 	Desc:    "random image",
-	Func: func(ctx tgot.ChatContext, msg *tg.Message, args []string) error {
+	Func: func(ctx *tgot.Message, msg *tg.Message, args []string) error {
 		logger := common.Log(ctx)
 
 		q := strings.Join(args, " ")
 		if q == "" {
-			return ctx.ReplyE(msg.ID, tgot.NewMessage("Provide keywords"))
+			return ctx.ReplyText("Provide keywords")
 		}
-		ctx.SendChatAction(tg.ActionUploadPhoto)
-		result, err := searchImages(q, safeSearch)
+		ctx.Chat().SendChatAction(tg.ActionUploadPhoto)
+		result, err := searchImages(q)
 		if err != nil {
 			logger.Err(err).Msg("search images failed")
 			if err1 := errors.Unwrap(err); err1 != nil {
 				err = err1
 			}
-			ctx.ReplyE(msg.ID, tgot.NewMessage("image search error: "+err.Error()))
+			ctx.ReplyText("image search error: " + err.Error())
 		}
 		if len(result) == 0 {
-			return ctx.ReplyE(msg.ID, tgot.NewMessage("No results"))
+			return ctx.ReplyText("No results")
 		}
 		u := result[random.RandP(len(result), 1.5)]
 		p := tgot.NewPhoto(tg.FileURL(u))
 		p.Caption = q
-		return ctx.ReplyE(msg.ID, p)
+		return ctx.Reply(p)
 	},
 }
 
-func searchImages(q string, safe bool) ([]string, error) {
+func searchImages(q string) ([]string, error) {
 	vals := url.Values{
 		"q":          {q},
 		"format":     {"json"},
 		"categories": {"images"},
-		"safesearch": {fmtBool(safe)},
 	}
-	resp, err := http.Get("https://" + searxngURL + "/search?" + vals.Encode())
+	resp, err := http.Get("http://" + searxngURL + "/search?" + vals.Encode())
 	if err != nil {
 		return nil, err
 	}
@@ -80,19 +79,12 @@ func searchImages(q string, safe bool) ([]string, error) {
 	return *(*[]string)(unsafe.Pointer(&res)), nil
 }
 
-func fmtBool(b bool) string {
-	if b {
-		return "1"
-	}
-	return "0"
-}
-
 var cacheTime = 60
 
-func OnInline(ctx tgot.InlineContext, q *tg.InlineQuery) {
+func OnInline(ctx tgot.Query[tgot.InlineAnswer], q *tg.InlineQuery) {
 	logger := common.Log(ctx)
 
-	imgs, err := searchImages(q.Query, false)
+	imgs, err := searchImages(q.Query)
 	if len(imgs) == 0 {
 		if err != nil {
 			logger.Err(err).Msg("search images failed")

@@ -1,11 +1,11 @@
 module tghwbot
 
-go 1.19
+go 1.23
 
 require (
 	github.com/gofiber/fiber/v2 v2.40.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
-	github.com/karalef/tgot v0.0.0-20230629182552-9664da775bba
+	github.com/karalef/tgot v0.0.0-20241203101113-d9423f506ebe
 	github.com/rs/zerolog v1.29.1
 	golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9
 )

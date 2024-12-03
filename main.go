@@ -4,38 +4,41 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
 	"tghwbot/modules/citgen"
-	"tghwbot/modules/craiyon"
 	"tghwbot/modules/debug"
+	"tghwbot/modules/porfirevich"
 	"tghwbot/modules/random"
 	"tghwbot/modules/search"
 	"tghwbot/modules/text"
 	"tghwbot/web"
-	"time"
 
 	"github.com/karalef/tgot"
+	"github.com/karalef/tgot/api"
 	"github.com/karalef/tgot/commands"
+	"github.com/karalef/tgot/handler"
 	"github.com/karalef/tgot/router"
 	"github.com/karalef/tgot/updates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-func main() {
+func init() {
 	time.Local = time.UTC
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+}
 
+func main() {
 	log.Printf("starting bot (PID: %d)", os.Getpid())
 
-	b, err := tgot.NewWithToken(os.Getenv("TOKEN"))
+	a, err := api.NewDefault(os.Getenv("TOKEN"))
 	if err != nil {
-		log.Error().Err(err).Msg("bot initialization failed")
+		log.Error().Err(err).Msg("api initialization failed")
 		return
 	}
 
-	modsCtx := b.MakeContext("modules")
 	cbRouter := router.NewCallbacks()
-
 	var cmds commands.List
 	cmds = commands.List{
 		commands.MakeHelp(&cmds),
@@ -44,18 +47,30 @@ func main() {
 		random.Number,
 		random.When,
 		text.Gen,
+		porfirevich.CMD,
 		citgen.CMD,
 		search.CMD,
-		craiyon.CMD(modsCtx),
 	}
-	cmds.Setup(b)
+	filter := &commands.Filter{
+		Command: cmds.Command,
+	}
 
-	b.OnInlineQuery = search.OnInline
-	b.OnCallbackQuery = cbRouter.Route
-	b.OnMessage = (&commands.MessageHandler{
-		Username: b.Me().Username,
-		Command:  cmds.Command,
-	}).Handle
+	b, err := tgot.New(a, &handler.Handler{
+		OnInlineQuery:   search.OnInline,
+		OnCallbackQuery: cbRouter.Route,
+		OnMessage:       filter.Handle,
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("bot initialization failed")
+		return
+	}
+
+	filter.Username = b.Me().Username
+	err = cmds.Setup(b)
+	if err != nil {
+		log.Error().Err(err).Msg("commands setup failed")
+		return
+	}
 
 	run(b)
 }
@@ -82,7 +97,7 @@ func run(b *tgot.Bot) {
 	}
 
 	go func() {
-		sig := make(chan os.Signal)
+		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
 		s := <-sig
 		cancel()
